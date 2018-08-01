@@ -1,3 +1,11 @@
+/*******************************************************************************
+ * Copyright (C) 2010-2018, Danilo Pianini and contributors listed in the main
+ * project's alchemist/build.gradle file.
+ *
+ * This file is part of Alchemist, and is distributed under the terms of the
+ * GNU General Public License, with a linking exception, as described in the file
+ * LICENSE in the Alchemist distribution's top directory.
+ ******************************************************************************/
 package it.unibo.alchemist.loader.displacements
 
 import it.unibo.alchemist.model.interfaces.Environment
@@ -35,7 +43,7 @@ import java.util.stream.StreamSupport
  *            how shifted should be positions along columns
  */
 open class Grid @JvmOverloads constructor(
-    private val environment: Environment<*>,
+    private val environment: Environment<*, *>,
     private val randomGenerator: RandomGenerator,
     private val xStart: Double,
     private val yStart: Double,
@@ -47,9 +55,9 @@ open class Grid @JvmOverloads constructor(
     private val yRand: Double = 0.0,
     private val xShift: Double = 0.0,
     private val yShift: Double = 0.0
-) : Displacement {
+) : Displacement<Position<*>> {
 
-    override fun stream(): Stream<Position> {
+    override fun stream(): Stream<Position<*>> {
         val steps = Pair(steps(xStart, xEnd, xStep), steps(yStart, yEnd, yStep))
         println(steps.first)
         println(steps.second)

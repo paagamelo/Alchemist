@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Optional;
 import java.util.ResourceBundle;
-
 import javafx.application.Platform;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -75,7 +74,7 @@ public class ButtonsBarController implements Initializable {
 
     private EffectsGroupBarController effectsGroupBarController;
     private Optional<PopOver> controlTypePopOver = Optional.empty();
-    private Optional<FXOutputMonitor<?>> displayMonitor = Optional.empty();
+    private Optional<FXOutputMonitor<?, ?>> displayMonitor = Optional.empty();
 
     /**
      * Default constructor.
@@ -94,7 +93,7 @@ public class ButtonsBarController implements Initializable {
      *
      * @param displayMonitor the graphical {@code OutputMonitor}
      */
-    public ButtonsBarController(final @Nullable FXOutputMonitor<?> displayMonitor) {
+    public ButtonsBarController(final @Nullable FXOutputMonitor<?, ?> displayMonitor) {
         this();
         setDisplayMonitor(displayMonitor);
     }
@@ -123,7 +122,7 @@ public class ButtonsBarController implements Initializable {
      * @param timeLabel       the {@code Label} for the steps; should probably be a {@link NumericLabelMonitor}
      * @param stepLabel       the {@code Label} for the time; should probably be a {@link NumericLabelMonitor}
      */
-    public ButtonsBarController(final @Nullable FXOutputMonitor<?> displayMonitor, final Button playPauseButton, final Label timeLabel, final Label stepLabel) {
+    public ButtonsBarController(final @Nullable FXOutputMonitor<?, ?> displayMonitor, final Button playPauseButton, final Label timeLabel, final Label stepLabel) {
         this(playPauseButton, timeLabel, stepLabel);
         setDisplayMonitor(displayMonitor);
     }
@@ -133,7 +132,7 @@ public class ButtonsBarController implements Initializable {
      *
      * @return the graphical {@link OutputMonitor}, if any
      */
-    public final Optional<FXOutputMonitor<?>> getDisplayMonitor() {
+    public final Optional<FXOutputMonitor<?, ?>> getDisplayMonitor() {
         return displayMonitor;
     }
 
@@ -142,7 +141,7 @@ public class ButtonsBarController implements Initializable {
      *
      * @param displayMonitor the graphical {@link OutputMonitor} to set; if null, it will be {@link Optional#empty() unset}
      */
-    public final void setDisplayMonitor(final @Nullable FXOutputMonitor<?> displayMonitor) {
+    public final void setDisplayMonitor(final @Nullable FXOutputMonitor<?, ?> displayMonitor) {
         this.displayMonitor = Optional.ofNullable(displayMonitor);
     }
 
@@ -168,18 +167,17 @@ public class ButtonsBarController implements Initializable {
         }
         effectGroupsDrawer.setOverLayVisible(false);
         effectGroupsDrawer.setResizableOnDrag(false);
-
         effectsButton.setOnAction(e -> {
-            // Drawer size is modified every time it's opened
-            if (effectGroupsDrawer.isHidden() || effectGroupsDrawer.isHiding()) {
-                effectGroupsDrawer.setDefaultDrawerSize(controlPane.getWidth() / DEFAULT_DRAWER_FRACTION);
-            }
-            this.drawerStack.toggle(effectGroupsDrawer);
             if (effectGroupsDrawer.isShown() || effectGroupsDrawer.isShowing()) {
                 this.drawerStack.setContent(new JFXDrawer());
+                this.drawerStack.toggle(effectGroupsDrawer, false);
+                this.drawerStack.setMouseTransparent(true);
+            } else {
+                effectGroupsDrawer.setDefaultDrawerSize(controlPane.getWidth() / DEFAULT_DRAWER_FRACTION);
+                this.drawerStack.toggle(effectGroupsDrawer, true);
+                this.drawerStack.setMouseTransparent(false);
             }
         });
-
         controlType.setText("");
         controlType.setGraphic(pan);
 
@@ -222,7 +220,7 @@ public class ButtonsBarController implements Initializable {
             Optional.ofNullable(controlTypePopoverController.getPanButton()).ifPresent(b -> b.setOnAction(e -> {
                 Platform.runLater(() -> this.controlType.setGraphic(pan));
                 this.displayMonitor.ifPresent(d -> {
-                    d.setViewStatus(FXOutputMonitor.ViewStatus.PAN);
+                    d.setViewStatus(FXOutputMonitor.ViewStatus.PANNING);
                 });
             }));
             controlTypePopOver = Optional.of(pop);

@@ -5,17 +5,17 @@ import it.unibo.alchemist.boundary.gui.effects.EffectGroup;
 import it.unibo.alchemist.model.interfaces.Concentration;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
+import it.unibo.alchemist.model.interfaces.Position2D;
+import java.util.Collection;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-
-import java.util.Collection;
 
 /**
  * {@code OutputMonitor} that handles the graphical part of the simulation in JavaFX.
  *
  * @param <T> the {@link Concentration} type
  */
-public interface FXOutputMonitor<T> extends OutputMonitor<T> {
+public interface FXOutputMonitor<T, P extends Position2D<?>> extends OutputMonitor<T, Position2D<?>> {
 
     /**
      * Getter method for the steps.
@@ -114,6 +114,12 @@ public interface FXOutputMonitor<T> extends OutputMonitor<T> {
         /** In this status, click to open editor to modify node properties. */
         EDITING,
         /** In this status, click and drag to move the view. */
-        PAN
+        PANNING
     }
+
+    /**
+     * Sets the canvas used for user interaction
+     * @param canvas
+     */
+    void setInteractionCanvas(Canvas canvas);
 }
