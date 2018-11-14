@@ -7,13 +7,10 @@
  * LICENSE in the Alchemist distribution's top directory.
  ******************************************************************************/
 
-/**
- * 
- */
 package it.unibo.alchemist.model.implementations.actions;
 
-import it.unibo.alchemist.model.interfaces.Action;
 import it.unibo.alchemist.model.interfaces.Context;
+import it.unibo.alchemist.model.interfaces.Dependency;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Position;
@@ -21,7 +18,8 @@ import it.unibo.alchemist.model.interfaces.Position;
 /**
  * This action moves a node inside a given environment.
  * 
- * @param <T>
+ * @param <T> concentration type
+ * @param <P> position type
  */
 public abstract class AbstractMoveNode<T, P extends Position<P>> extends AbstractAction<T> {
 
@@ -57,8 +55,13 @@ public abstract class AbstractMoveNode<T, P extends Position<P>> extends Abstrac
         super(node);
         this.env = environment;
         this.isAbs = isAbsolute;
+        declareDependencyTo(Dependency.MOVEMENT);
     }
 
+    /**
+     * Detects if the move is in absolute or relative coordinates, then calls the correct method on the
+     * {@link Environment}.
+     */
     @Override
     public void execute() {
         if (isAbs) {
@@ -69,7 +72,7 @@ public abstract class AbstractMoveNode<T, P extends Position<P>> extends Abstrac
     }
 
     @Override
-    public Context getContext() {
+    public final Context getContext() {
         return Context.LOCAL;
     }
 
@@ -104,7 +107,7 @@ public abstract class AbstractMoveNode<T, P extends Position<P>> extends Abstrac
     }
 
     /**
-     * @return true if this {@link Action} is using absolute positions
+     * @return true if this {@link it.unibo.alchemist.model.interfaces.Action} is using absolute positions
      */
     protected final boolean isAbsolute() {
         return isAbs;

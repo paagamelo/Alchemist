@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.danilopianini.lang.HashString;
-import org.danilopianini.util.ListSet;
-import org.danilopianini.util.ListSets;
 
 import it.unibo.alchemist.expressions.interfaces.ITreeNode;
 import it.unibo.alchemist.model.implementations.molecules.LsaMolecule;
@@ -30,7 +28,7 @@ import it.unibo.alchemist.model.interfaces.Vehicle;
 
 /**
  */
-public class SAPEREWalker extends MoveOnMap<List<ILsaMolecule>> implements ILsaAction {
+public final class SAPEREWalker extends MoveOnMap<List<ILsaMolecule>> implements ILsaAction {
 
     /**
      * The default molecule that identifies an interacting object.
@@ -82,11 +80,6 @@ public class SAPEREWalker extends MoveOnMap<List<ILsaMolecule>> implements ILsaA
     @Override
     public SAPEREWalker cloneAction(final Node<List<ILsaMolecule>> n, final Reaction<List<ILsaMolecule>> r) {
         return null;
-    }
-
-    @Override
-    public ListSet<ILsaMolecule> getModifiedMolecules() {
-        return ListSets.emptyListSet();
     }
 
     @Override

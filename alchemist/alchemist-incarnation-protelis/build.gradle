@@ -1,15 +1,12 @@
 dependencies {
-    compile (
-        project(':alchemist-interfaces'),
-        project(':alchemist-maps'),
-        "com.google.guava:guava:$guavaVersion",
-        "org.eclipse.xtext:org.eclipse.xtext.java:${xtextVersion}",
-        "org.protelis:protelis:$protelisVersion"
-    )
-    testCompile(
-        project(':alchemist-engine'),
-        project(':alchemist-loading'),
-    )
+    api project(':alchemist-interfaces')
+    api "org.protelis:protelis:$protelisVersion"
+    implementation project(':alchemist-time')
+    implementation project(':alchemist-implementationbase')
+    implementation project(':alchemist-maps')
+    implementation "com.google.guava:guava:$guavaVersion"
+    testImplementation project(':alchemist-engine')
+    testImplementation project(':alchemist-loading')
 }
 
 configurations {

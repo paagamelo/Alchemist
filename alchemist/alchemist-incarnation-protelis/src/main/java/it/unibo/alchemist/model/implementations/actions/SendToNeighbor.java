@@ -13,13 +13,14 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import it.unibo.alchemist.model.implementations.nodes.ProtelisNode;
+import it.unibo.alchemist.model.interfaces.Context;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Reaction;
 import it.unibo.alchemist.protelis.AlchemistNetworkManager;
 
 /**
  */
-public class SendToNeighbor extends AbstractLocalAction<Object> {
+public final class SendToNeighbor extends AbstractAction<Object> {
 
     private static final long serialVersionUID = -8826563176323247613L;
     private final RunProtelisProgram<?> prog;
@@ -37,6 +38,7 @@ public class SendToNeighbor extends AbstractLocalAction<Object> {
         super(node);
         this.reaction = Objects.requireNonNull(reaction);
         prog = Objects.requireNonNull(program);
+        declareDependencyTo(program.asMolecule());
     }
 
     @Override
@@ -51,6 +53,11 @@ public class SendToNeighbor extends AbstractLocalAction<Object> {
             return new SendToNeighbor((ProtelisNode) n, reaction, possibleRefs.get(0));
         }
         throw new IllegalStateException("There must be one and one only unconfigured " + RunProtelisProgram.class.getSimpleName());
+    }
+
+    @Override
+    public Context getContext() {
+        return Context.NEIGHBORHOOD;
     }
 
     @Override
@@ -73,4 +80,8 @@ public class SendToNeighbor extends AbstractLocalAction<Object> {
         return prog;
     }
 
+    @Override
+    public String toString() {
+        return "broadcast " + prog.asMolecule().getName() + " data";
+    }
 }

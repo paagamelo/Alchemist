@@ -77,20 +77,16 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
     List<Condition<T>> getConditions();
 
     /**
-     * @return The list of molecules whose concentration may change after the
-     *         execution of this reaction. If it returns null, it means that it
-     *         will influence every other reaction with compatible context,
-     *         regardless the molecules involved.
+     * @return The list of {@link Dependency} whose concentration may change after the
+     *         execution of this reaction.
      */
-    ListSet<Molecule> getInfluencedMolecules();
+    ListSet<? extends Dependency> getOutboundDependencies();
 
     /**
-     * @return The list of {@link Molecule}s whose concentration may affect the
-     *         execution of the {@link Reaction}. If it returns null, it means
-     *         that it is influenced every other reaction with compatible
-     *         context, regardless the molecules involved.
+     * @return The list of {@link Dependency}s whose concentration may affect the
+     *         execution of the {@link Reaction}.
      */
-    ListSet<Molecule> getInfluencingMolecules();
+    ListSet<? extends Dependency> getInboundDependencies();
 
     /**
      * @return The widest {@link Context} among {@link Condition}s, namely the

@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Copyright (C) 2010-2018, Danilo Pianini and contributors listed in the main
  * project's alchemist/build.gradle file.
- * 
+ *
  * This file is part of Alchemist, and is distributed under the terms of the
  * GNU General Public License, with a linking exception, as described in the file
  * LICENSE in the Alchemist distribution's top directory.
@@ -35,7 +35,7 @@ import static it.unibo.alchemist.boundary.gui.utility.SVGImageUtils.DEFAULT_ALCH
 public class ProjectGUI extends Application {
 
     /**
-     * 
+     *
      */
     public static final String RESOURCE_LOCATION = ProjectGUI.class.getPackage().getName().replace('.', '/');
     private BorderPane root;
@@ -66,7 +66,8 @@ public class ProjectGUI extends Application {
      * Method that initializes the scene by loading all needed .fxml files and
      * sets the primary stage.
      *
-     * @throws IOException in case of bugs
+     * @throws IOException
+     *             in case of bugs
      */
     @Override
     public void start(final Stage primaryStage) throws IOException {

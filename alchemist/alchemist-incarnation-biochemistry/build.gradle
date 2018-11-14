@@ -1,40 +1,34 @@
 apply plugin: 'antlr'
 
-sourceSets {
-    antlr
-}
-
 dependencies {
-    compile (
-        project(':alchemist-maps'),
+    implementation (
+        project(':alchemist-implementationbase'),
         "com.google.guava:guava:$guavaVersion",
-        "org.danilopianini:jirf:${jirfVersion}",
-        project.sourceSets.antlr.output
+        "net.sf.trove4j:trove4j:$troveVersion",
+        "org.danilopianini:boilerplate:$boilerplateVersion",
+        "org.danilopianini:jirf:${jirfVersion}"
     )
-    testCompile(
-        project(':alchemist-loading'),
-        project(':alchemist-engine')
+    testImplementation(
+        project(':alchemist-engine'),
+        project(':alchemist-loading')
     )
     antlr "org.antlr:antlr4:$antlr4Version"
-    antlrCompile "org.antlr:antlr4:$antlr4Version"
+    runtimeOnly "org.antlr:antlr4-runtime:$antlr4Version"
 }
 
-sourcesJar {
-    from sourceSets.antlr.allSource
-}
-
-generateGrammarSource {
-    arguments += ["-visitor", "-package", "it.unibo.alchemist.biochemistrydsl"]
-    def target = new File('src/antlr/java/')
-    if ((target.exists() && target.isDirectory()) || target.mkdirs()) {
-        outputDirectory = target
-    } else {
-        throw new IllegalStateException("$target is not an existing directory and could not be created as such.")
+configurations {
+    all {
+        if(!it.name.contains('antlr')) {
+            exclude group: 'org.antlr', module: 'antlr-runtime'
+        }
     }
 }
 
-compileAntlrJava.dependsOn('generateGrammarSource')
-compileJava.dependsOn('compileAntlrJava')
+generateGrammarSource {
+    arguments += ["-visitor", "-package", "it.unibo.alchemist.biochemistrydsl", "-long-messages"]
+}
+
+compileKotlin.dependsOn("generateGrammarSource")
 
 checkstyle {
     sourceSets = [project.sourceSets.main, project.sourceSets.test]

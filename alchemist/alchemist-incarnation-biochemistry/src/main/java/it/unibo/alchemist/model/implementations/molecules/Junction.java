@@ -11,12 +11,12 @@ package it.unibo.alchemist.model.implementations.molecules;
 import java.util.Collections;
 import java.util.Map;
 
-import it.unibo.alchemist.model.interfaces.Molecule;
+import it.unibo.alchemist.model.interfaces.Dependency;
 
 /**
  * Represents a junction between two cells.
  */
-public class Junction extends SimpleMolecule {
+public final class Junction extends SimpleMolecule {
 
     private static final long serialVersionUID = -5538036651435573599L;
 
@@ -69,7 +69,7 @@ public class Junction extends SimpleMolecule {
     }
 
     @Override
-    public boolean dependsOn(final Molecule mol) {
+    public boolean dependsOn(final Dependency mol) {
         return equals(mol);
     }
 

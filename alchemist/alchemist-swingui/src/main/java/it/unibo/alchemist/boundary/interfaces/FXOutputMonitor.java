@@ -2,11 +2,13 @@ package it.unibo.alchemist.boundary.interfaces;
 
 import it.unibo.alchemist.boundary.gui.effects.EffectFX;
 import it.unibo.alchemist.boundary.gui.effects.EffectGroup;
+import it.unibo.alchemist.input.KeyboardActionListener;
 import it.unibo.alchemist.model.interfaces.Concentration;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Position2D;
 import java.util.Collection;
+import java.util.List;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 
@@ -15,7 +17,7 @@ import javafx.scene.canvas.GraphicsContext;
  *
  * @param <T> the {@link Concentration} type
  */
-public interface FXOutputMonitor<T, P extends Position2D<?>> extends OutputMonitor<T, Position2D<?>> {
+public interface FXOutputMonitor<T, P extends Position2D<? extends P>> extends OutputMonitor<T, P> {
 
     /**
      * Getter method for the steps.
@@ -103,6 +105,8 @@ public interface FXOutputMonitor<T, P extends Position2D<?>> extends OutputMonit
      * The enum models the status of the view.
      */
     enum ViewStatus {
+        /** In this status, click and drag to move the view. */
+        PANNING,
         /** In this status, click and drag to select nodes. */
         SELECTING,
         /** In this status, click and drag to move selected nodes. */
@@ -110,16 +114,18 @@ public interface FXOutputMonitor<T, P extends Position2D<?>> extends OutputMonit
         /** In this status, click to clone nodes. */
         CLONING,
         /** In this status, click to delete nodes. */
-        DELETING,
-        /** In this status, click to open editor to modify node properties. */
-        EDITING,
-        /** In this status, click and drag to move the view. */
-        PANNING
+        DELETING
     }
 
     /**
-     * Sets the canvas used for user interaction
-     * @param canvas
+     * Returns a list of canvases used for interacting with the user.
+     * @return the list
      */
-    void setInteractionCanvas(Canvas canvas);
+    List<Canvas> getInteractionCanvases();
+
+    /**
+     * Returns the keyboard listener associated with this monitor.
+     * @return the listener
+     */
+    KeyboardActionListener getKeyboardListener();
 }

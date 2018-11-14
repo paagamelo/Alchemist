@@ -12,9 +12,11 @@
  */
 package it.unibo.alchemist.model.implementations.positions;
 
-import com.google.common.collect.Lists;
 import it.unibo.alchemist.model.interfaces.Position2D;
+
 import java.util.List;
+
+import com.google.common.collect.Lists;
 
 /**
  * This class measures distances as integers. Suitable for bidimensional
@@ -41,7 +43,7 @@ public final class Manhattan2DPosition implements Position2D<Manhattan2DPosition
     }
 
     @Override
-    public Manhattan2DPosition add(final Manhattan2DPosition other) {
+    public Manhattan2DPosition plus(final Manhattan2DPosition other) {
         return new Manhattan2DPosition(xCoord + other.xCoord, yCoord + other.yCoord);
     }
 
@@ -104,7 +106,7 @@ public final class Manhattan2DPosition implements Position2D<Manhattan2DPosition
     }
 
     @Override
-    public Manhattan2DPosition subtract(final Manhattan2DPosition other) {
+    public Manhattan2DPosition minus(final Manhattan2DPosition other) {
         return new Manhattan2DPosition(xCoord - other.xCoord, yCoord - other.yCoord);
     }
 

@@ -8,14 +8,9 @@
  ******************************************************************************/
 package it.unibo.alchemist.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
-
 
 import org.apache.commons.math3.random.MersenneTwister;
 import org.junit.Test;
@@ -38,6 +33,12 @@ import it.unibo.alchemist.model.interfaces.Incarnation;
 import it.unibo.alchemist.model.interfaces.Molecule;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Position;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.*;
 
 /**
  * Test implementation of extra-cellular environment  created with EnvironmentNodes.
@@ -175,14 +176,12 @@ public class TestEnvironmentNodes {
         final MersenneTwister rand = new MersenneTwister();
         final Molecule a = new Biomolecule("A");
         cellNode.addReaction(INCARNATION.createReaction(
-                rand, env, cellNode, new ExponentialTime<>(1, rand), "[A] --> [A in env]"
-                ));
+                rand, env, cellNode, new ExponentialTime<>(1, rand), "[A] --> [A in env]"));
         envNode1.addReaction(INCARNATION.createReaction(
-                rand, env, envNode1, new ExponentialTime<>(1000, rand), "[A] --> [A in env]"
-                ));
+                rand, env, envNode1, new ExponentialTime<>(1000, rand), "[A] --> [A in env]"));
         envNode2.addReaction(INCARNATION.createReaction(
-                rand, env, envNode2, new ExponentialTime<>(1000, rand), "[A] --> [A in env]"
-                ));
+                rand, env, envNode2, new ExponentialTime<>(1000, rand), "[A] --> [A in env]"));
+        final double total = 1000.0;
         cellNode.setConcentration(a, 1000.0);
         env.setLinkingRule(new it.unibo.alchemist.model.implementations.linkingrules.ConnectWithinDistance<>(1));
         final Euclidean2DPosition pos1 = new Euclidean2DPosition(0, -0.75);
@@ -197,7 +196,9 @@ public class TestEnvironmentNodes {
         final Simulation<?, ?> sim = new Engine<>(env, 10000);
         sim.play();
         sim.run();
-        assertTrue(envNode3.getConcentration(a) != 0 && envNode4.getConcentration(a) != 0);
+        assertNotEquals(0.0, envNode3.getConcentration(a));
+        assertNotEquals(0.0, envNode4.getConcentration(a));
+        assertEquals(total, envNode3.getConcentration(a) + envNode4.getConcentration(a), 0.1);
     }
 
     /**
@@ -368,11 +369,11 @@ public class TestEnvironmentNodes {
         assertEquals(CON_A_IN_CELL + conAInCell, conAInCell, 1000, PRECISION);
     }
 
-    private static <T, P extends Position<? extends P>> Environment<T, P> testNoVar(final String resource) {
+    private static <T, P extends Position<P>> Environment<T, P> testNoVar(final String resource) {
         return testLoading(resource, Collections.emptyMap());
     }
 
-    private static <T, P extends Position<? extends P>> Environment<T, P> testLoading(final String resource, final Map<String, Double> vars) {
+    private static <T, P extends Position<P>> Environment<T, P> testLoading(final String resource, final Map<String, Double> vars) {
         final InputStream res = ResourceLoader.getResourceAsStream(resource);
         assertNotNull("Missing test resource " + resource, res);
         final Environment<T, P> env = new YamlLoader(res).getWith(vars);

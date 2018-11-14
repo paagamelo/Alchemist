@@ -47,7 +47,7 @@ public interface OutputMonitor<T, P extends Position<? extends P>> extends Seria
      * control flow which will execute this method. A new thread could have been
      * spawned or the same flow of the simulation may execute this method. This
      * depends on the specific {@link it.unibo.alchemist.core.interfaces.Simulation} implementation.
-     * 
+     *
      * @param env
      *            the environment
      */

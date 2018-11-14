@@ -15,6 +15,7 @@ package it.unibo.alchemist.model.implementations.actions;
 import java.util.Objects;
 import java.util.Optional;
 
+import it.unibo.alchemist.model.interfaces.Dependency;
 import org.danilopianini.util.LinkedListSet;
 import org.danilopianini.util.ListSet;
 
@@ -31,7 +32,7 @@ import it.unibo.alchemist.model.interfaces.Node;
 public abstract class AbstractAction<T> implements Action<T> {
 
     private static final long serialVersionUID = 1L;
-    private final ListSet<Molecule> influenced = new LinkedListSet<>();
+    private final ListSet<Dependency> dependencies = new LinkedListSet<>();
     private final Node<T> n;
 
     /**
@@ -54,8 +55,8 @@ public abstract class AbstractAction<T> implements Action<T> {
      * @param m
      *            the molecule which will be modified
      */
-    protected void addModifiedMolecule(final Molecule m) {
-        influenced.add(m);
+    protected final void declareDependencyTo(final Dependency m) {
+        dependencies.add(m);
     }
 
     /**
@@ -76,8 +77,8 @@ public abstract class AbstractAction<T> implements Action<T> {
      * compatible context, return null.
      */
     @Override
-    public ListSet<? extends Molecule> getModifiedMolecules() {
-        return influenced;
+    public final ListSet<? extends Dependency> getOutboundDependencies() {
+        return dependencies;
     }
 
     /**
@@ -120,4 +121,11 @@ public abstract class AbstractAction<T> implements Action<T> {
                 Objects.requireNonNull(concentration, "Cannot inject null concentrations"));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
+    }
 }

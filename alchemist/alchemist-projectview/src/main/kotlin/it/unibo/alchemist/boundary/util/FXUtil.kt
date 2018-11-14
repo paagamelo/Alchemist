@@ -56,7 +56,7 @@ class FXUtil {
                 expContent.add(textArea, 0, 1)
                 alert.dialogPane.expandableContent = expContent
                 alert.dialogPane.children.filter { it is Label }
-                        .forEach { it.minHeight(Region.USE_PREF_SIZE) }
+                    .forEach { it.minHeight(Region.USE_PREF_SIZE) }
                 alert.showAndWait()
             }
         }

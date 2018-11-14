@@ -14,11 +14,11 @@ package it.unibo.alchemist.model.implementations.conditions;
 
 import java.util.Objects;
 
+import it.unibo.alchemist.model.interfaces.Dependency;
 import org.danilopianini.util.LinkedListSet;
 import org.danilopianini.util.ListSet;
 
 import it.unibo.alchemist.model.interfaces.Condition;
-import it.unibo.alchemist.model.interfaces.Molecule;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Reaction;
 
@@ -30,7 +30,7 @@ import it.unibo.alchemist.model.interfaces.Reaction;
 public abstract class AbstractCondition<T> implements Condition<T> {
 
     private static final long serialVersionUID = -1610947908159507754L;
-    private final ListSet<Molecule> influencing = new LinkedListSet<>();
+    private final ListSet<Dependency> influencing = new LinkedListSet<>();
     private final Node<T> n;
 
     /**
@@ -47,7 +47,7 @@ public abstract class AbstractCondition<T> implements Condition<T> {
      * any change in the context, return null.
      */
     @Override
-    public ListSet<? extends Molecule> getInfluencingMolecules() {
+    public final ListSet<? extends Dependency> getInboundDependencies() {
         return influencing;
     }
 
@@ -65,7 +65,7 @@ public abstract class AbstractCondition<T> implements Condition<T> {
     /**
      * @param m the molecule to add
      */
-    protected void addReadMolecule(final Molecule m) {
+    protected final void declareDependencyOn(final Dependency m) {
         influencing.add(m);
     }
 
@@ -77,5 +77,14 @@ public abstract class AbstractCondition<T> implements Condition<T> {
     @Override
     public Condition<T> cloneCondition(final Node<T> n, final Reaction<T> r) {
         throw new UnsupportedOperationException(getClass().getSimpleName() + " has no support for cloning.");
+    }
+
+    /**
+     *
+     * @return the simple class name
+     */
+    @Override
+    public String toString() {
+        return getClass().getSimpleName();
     }
 }

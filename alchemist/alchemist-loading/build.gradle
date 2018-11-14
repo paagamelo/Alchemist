@@ -1,19 +1,22 @@
 dependencies {
-    compile(
+    implementation(
         project(':alchemist-implementationbase'),
         project(':alchemist-interfaces'),
         project(':alchemist-time'),
         project(':alchemist-maps'),
+        "com.google.guava:guava:${guavaVersion}",
         "org.apache.commons:commons-lang3:${lang3Version}",
         "org.danilopianini:jirf:${jirfVersion}",
         "org.reflections:reflections:$reflectionsVersion",
         "org.yaml:snakeyaml:$snakeyamlVersion"
     )
-    testCompile(
+    testImplementation(
         project(':alchemist-engine'),
         project(':alchemist-maps')
     )
-    testRuntime(
+    testRuntimeOnly(
         project(':alchemist-incarnation-sapere')
     )
 }
+compileKotlin.dependsOn(project(':alchemist-implementationbase').compileScala)
+compileJava.dependsOn(project(':alchemist-implementationbase').compileScala)

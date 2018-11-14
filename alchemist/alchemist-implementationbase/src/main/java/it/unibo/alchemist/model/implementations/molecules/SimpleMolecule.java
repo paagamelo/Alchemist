@@ -43,11 +43,9 @@ public class SimpleMolecule implements Molecule {
         this.n = name;
     }
 
-    @Override
-    public boolean dependsOn(final Molecule mol) {
-        return equals(mol);
-    }
-
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public boolean equals(final Object obj) {
         if (obj == this) {
@@ -64,7 +62,7 @@ public class SimpleMolecule implements Molecule {
     }
 
     @Override
-    public long getId() {
+    public final long getId() {
         initHash();
         return hash64;
     }
@@ -74,6 +72,9 @@ public class SimpleMolecule implements Molecule {
         return n.toString();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public int hashCode() {
         initHash();
@@ -89,6 +90,9 @@ public class SimpleMolecule implements Molecule {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public String toString() {
         return n.toString();

@@ -15,6 +15,7 @@ package it.unibo.alchemist.model.implementations.reactions;
 import it.unibo.alchemist.model.interfaces.Action;
 import it.unibo.alchemist.model.interfaces.Condition;
 import it.unibo.alchemist.model.interfaces.Context;
+import it.unibo.alchemist.model.interfaces.Dependency;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Molecule;
 import it.unibo.alchemist.model.interfaces.Node;
@@ -23,11 +24,15 @@ import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
+
+import org.danilopianini.util.ArrayListSet;
+import org.danilopianini.util.Hashes;
+import org.danilopianini.util.ImmutableListSet;
 import org.danilopianini.util.LinkedListSet;
 import org.danilopianini.util.ListSet;
 import org.danilopianini.util.ListSets;
@@ -42,61 +47,22 @@ import org.danilopianini.util.ListSets;
  */
 public abstract class AbstractReaction<T> implements Reaction<T> {
 
-    private static final int CENTER = 0;
-    private static final AtomicInteger ID_GEN = new AtomicInteger();
     /**
      * How bigger should be the StringBuffer with respect to the previous
      * interaction.
      */
     private static final byte MARGIN = 20;
-    private static final int MAX = 1073741824;
-    private static final int MIN = -MAX;
-    /**
-     * Separators for toString.
-     */
-    protected static final String NEXT = "next scheduled @", SEP0 = " :: ", SEP1 = " -", SEP2 = "-> ";
-    private static final AtomicInteger ODD = new AtomicInteger(1);
-    private static final AtomicBoolean POSITIVE = new AtomicBoolean(true);
-    private static final AtomicInteger POW = new AtomicInteger(1);
-    private static final long serialVersionUID = 6454665278161217867L;
-
-    private List<? extends Action<T>> actions = new ArrayList<Action<T>>(0);
-    private List<? extends Condition<T>> conditions = new ArrayList<Condition<T>>(0);
-    private ListSet<Molecule> influencing = new LinkedListSet<>(), influenced = new LinkedListSet<>();
-
+    private static final ListSet<Dependency> EVERYTHING = ImmutableListSet.of(Dependency.EVERYTHING);
+    private static final long serialVersionUID = 1L;
     private final int hash;
+    private List<? extends Action<T>> actions = new ArrayList<>(0);
+    private List<? extends Condition<T>> conditions = new ArrayList<>(0);
     private Context incontext = Context.LOCAL, outcontext = Context.LOCAL;
+    private ListSet<Dependency> outbound = new LinkedListSet<>();
+    private ListSet<Dependency> inbound = new LinkedListSet<>();
     private int stringLength = Byte.MAX_VALUE;
     private final TimeDistribution<T> dist;
     private final Node<T> node;
-
-    /**
-     * This method provides facility to clone reactions. Given a constructor in
-     * form of a {@link Supplier}, it populates the actions and conditions with
-     * cloned version of the ones registered in this reaction.
-     * 
-     * @param builder
-     *            the supplier
-     * 
-     * @param <R>
-     *            The reaction type
-     * @return the populated cloned reaction
-     */
-    protected <R extends Reaction<T>> R makeClone(final Supplier<R> builder) {
-        final R res = builder.get();
-        final Node<T> n = res.getNode();
-        final ArrayList<Condition<T>> c = new ArrayList<Condition<T>>(conditions.size());
-        for (final Condition<T> cond : getConditions()) {
-            c.add(cond.cloneCondition(n, res));
-        }
-        final ArrayList<Action<T>> a = new ArrayList<Action<T>>(actions.size());
-        for (final Action<T> act : getActions()) {
-            a.add(act.cloneAction(n, res));
-        }
-        res.setActions(a);
-        res.setConditions(c);
-        return res;
-    }
 
     /**
      * Builds a new reaction, starting at time t.
@@ -107,55 +73,134 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
      *            the time distribution this reaction should follow
      */
     public AbstractReaction(final Node<T> n, final TimeDistribution<T> pd) {
-        final int id = ID_GEN.getAndIncrement();
-        if (id == 0) {
-            hash = CENTER;
-        } else {
-            final boolean positive = POSITIVE.get();
-            final int val = positive ? MAX : MIN;
-            final int pow = POW.get();
-            final int odd = ODD.get();
-            hash = val / pow * odd;
-            if (!positive) {
-                if (odd + 2 > pow) {
-                    POW.set(pow * 2);
-                    ODD.set(1);
-                } else {
-                    ODD.set(odd + 2);
-                }
-            }
-            POSITIVE.set(!positive);
-        }
+        hash = Hashes.hash32(n.hashCode(), n.getChemicalSpecies(), n.getReactions().size());
         dist = pd;
         node = n;
     }
 
+    /**
+     * Allows subclasses to add influenced molecules.
+     *
+     * @param m
+     *            the influenced molecule
+     */
+    protected final void addOutboundDependency(final Dependency m) {
+        outbound.add(m);
+    }
+
+    /**
+     * Allows subclasses to add influencing molecules.
+     *
+     * @param m
+     *            the molecule to add
+     */
+    protected final void addInboundDependency(final Dependency m) {
+        inbound.add(m);
+    }
+
+    /**
+     * The default implementation verifies if all the conditions are valid.
+     *
+     * @return true if the reaction can execute right now.
+     */
     @Override
-    public int compareTo(final Reaction<T> o) {
+    public boolean canExecute() {
+        if (conditions == null) {
+            return true;
+        }
+        int i = 0;
+        while (i < conditions.size() && conditions.get(i).isValid()) {
+            i++;
+        }
+        return i == conditions.size();
+    }
+
+    @Override
+    public final int compareTo(final Reaction<T> o) {
         return getTau().compareTo(o.getTau());
     }
 
     @Override
     public final boolean equals(final Object o) {
-        if (o instanceof AbstractReaction) {
-            return ((AbstractReaction<?>) o).hash == hash;
+        return this == o;
+    }
+
+    /**
+     * The default execution iterates all the actions in order and executes them. Override to change the behaviour.
+     */
+    @Override
+    public void execute() {
+        for (final Action<T> a : actions) {
+            a.execute();
         }
-        return false;
+    }
+
+    /**
+     * Override only if you need to implement extremely tricky behaviours. Must be overridden along with
+     * {@link #setActions(List)}.
+     *
+     * @return the list of {@link Action}s.
+     */
+    @Override
+    public List<Action<T>> getActions() {
+        return Collections.unmodifiableList(actions);
+    }
+
+    /**
+     * Override only if you need to implement extremely tricky behaviours. Must be overridden along with
+     * {@link #setConditions(List)}.
+     *
+     * @return the list of {@link Condition}s.
+     */
+    @Override
+    public List<Condition<T>> getConditions() {
+        return Collections.unmodifiableList(conditions);
     }
 
     @Override
-    public Context getInputContext() {
+    public final ListSet<Dependency> getOutboundDependencies() {
+        return optionallyImmodifiableView(outbound);
+    }
+
+    @Override
+    public final ListSet<Dependency> getInboundDependencies() {
+        return optionallyImmodifiableView(inbound);
+    }
+
+    @Override
+    public final Context getInputContext() {
         return incontext;
     }
 
     @Override
-    public Context getOutputContext() {
+    public final Context getOutputContext() {
         return outcontext;
     }
 
+    /**
+     * @return a {@link String} representation of the rate
+     */
+    protected String getRateAsString() {
+        return Double.toString(dist.getRate());
+    }
+
+    /**
+     * This method is used to provide a reaction name in toString().
+     *
+     * @return the name for this reaction.
+     */
+    protected String getReactionName() {
+        return getClass().getSimpleName();
+    }
+
     @Override
-    public Time getTau() {
+    public final Time getTau() {
         return dist.getNextOccurence();
+    }
+
+    @Override
+    public final TimeDistribution<T> getTimeDistribution() {
+        return dist;
     }
 
     @Override
@@ -167,76 +212,123 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     public void initializationComplete(final Time t, final Environment<T, ?> env) { }
 
     /**
-     * Used by sublcasses to set their input context.
+     * This method provides facility to clone reactions. Given a constructor in
+     * form of a {@link Supplier}, it populates the actions and conditions with
+     * cloned version of the ones registered in this reaction.
+     *
+     * @param builder
+     *            the supplier
+     *
+     * @param <R>
+     *            The reaction type
+     * @return the populated cloned reaction
+     */
+    protected <R extends Reaction<T>> R makeClone(final Supplier<R> builder) {
+        final R res = builder.get();
+        final Node<T> n = res.getNode();
+        final ArrayList<Condition<T>> c = new ArrayList<>(conditions.size());
+        for (final Condition<T> cond : getConditions()) {
+            c.add(cond.cloneCondition(n, res));
+        }
+        final ArrayList<Action<T>> a = new ArrayList<>(actions.size());
+        for (final Action<T> act : getActions()) {
+            a.add(act.cloneAction(n, res));
+        }
+        res.setActions(a);
+        res.setConditions(c);
+        return res;
+    }
+
+    private static ListSet<Dependency> computeDependencies(final Stream<? extends Dependency> stream) {
+        final Iterator<? extends Dependency> fromStream = stream.iterator();
+        boolean everyMolecule = false;
+        final ListSet<Dependency> result = new ArrayListSet<>();
+        while (fromStream.hasNext()) {
+            final Dependency dependency = fromStream.next();
+            if (dependency.equals(Dependency.EVERYTHING)) {
+                return EVERYTHING;
+            }
+            if (dependency.equals(Dependency.EVERY_MOLECULE) && !everyMolecule) {
+                result.removeIf(it -> it instanceof Molecule);
+                everyMolecule = true;
+                result.add(Dependency.EVERY_MOLECULE);
+            } else  if (!(everyMolecule && dependency instanceof Molecule)) {
+                result.add(dependency);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * This should get overridden only if very tricky behaviours are implemented, such that the default Alchemist
+     * action addition model is no longer usable. Must be overridden along with {@link #getActions()}.
+     *
+     * @param a the actions to set
+     */
+    @Override
+    public void setActions(final List<Action<T>> a) {
+        actions = Objects.requireNonNull(a, "The actions list can't be null");
+        setOutputContext(a.stream().map(Action::getContext).reduce(Context.LOCAL, Context::getWider));
+        outbound = computeDependencies(a.stream().map(Action::getOutboundDependencies).flatMap(List::stream));
+    }
+
+    /**
+     * This should get overridden only if very tricky behaviours are implemented, such that the default Alchemist
+     * condition addition model is no longer usable. Must be overridden along with {@link #getConditions()}.
+     *
+     * @param c the actions to set
+     */
+    @Override
+    public void setConditions(final List<Condition<T>> c) {
+        conditions = Objects.requireNonNull(c, "The conditions list can't be null");
+        setInputContext(c.stream().map(Condition::getContext).reduce(Context.LOCAL, Context::getWider));
+        inbound = computeDependencies(c.stream().map(Condition::getInboundDependencies).flatMap(List::stream));
+    }
+
+    /**
+     * Used by subclasses to set their input context.
      * 
      * @param c
      *            the new input context
      */
-    protected void setInputContext(final Context c) {
+    protected final void setInputContext(final Context c) {
         incontext = c;
     }
 
     /**
-     * Used by sublcasses to set their output context.
+     * Used by subclasses to set their output context.
      * 
      * @param c
      *            the new input context
      */
-    protected void setOutputContext(final Context c) {
+    protected final void setOutputContext(final Context c) {
         outcontext = c;
     }
 
+    /**
+     * @return the default implementation returns a String in the form
+     * className@timeScheduled[Conditions]-rate->[Actions]
+     */
     @Override
     public String toString() {
         final StringBuilder tot = new StringBuilder(stringLength + MARGIN);
         tot.append(getReactionName());
-        tot.append(SEP0);
-        tot.append(NEXT);
+        tot.append('@');
         tot.append(getTau());
-        tot.append('\n');
-        for (final Condition<T> c : getConditions()) {
-            tot.append(c);
-            tot.append(' ');
-        }
-        tot.append(SEP1);
+        tot.append(':');
+        tot.append(getConditions().toString());
+        tot.append('-');
         tot.append(getRateAsString());
-        tot.append(SEP2);
-        for (final Action<T> a : getActions()) {
-            tot.append(a);
-            tot.append(' ');
-        }
+        tot.append("->");
+        tot.append(getActions().toString());
         stringLength = tot.length();
         return tot.toString();
-    }
-
-    /**
-     * This method is used to provide a reaction name in toString().
-     * 
-     * @return the name for this reaction.
-     */
-    protected String getReactionName() {
-        return getClass().getSimpleName();
     }
 
     @Override
     public final void update(final Time curTime, final boolean executed, final Environment<T, ?> env) {
         updateInternalStatus(curTime, executed, env);
         dist.update(curTime, executed, getRate(), env);
-    }
-
-    @Override
-    public final TimeDistribution<T> getTimeDistribution() {
-        return dist;
-    }
-
-    /**
-     * Allows subclasses to add influenced molecules.
-     * 
-     * @param m
-     *            the influenced molecule
-     */
-    protected void addInfluencedMolecule(final Molecule m) {
-        influenced.add(m);
     }
 
     /**
@@ -254,136 +346,13 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
      */
     protected abstract void updateInternalStatus(Time curTime, boolean executed, Environment<T, ?> env);
 
-    /**
-     * Allows subclasses to add influencing molecules.
-     * 
-     * @param m
-     *            the molecule to add
-     */
-    protected void addInfluencingMolecule(final Molecule m) {
-        influencing.add(m);
-    }
-
     @Override
-    public boolean canExecute() {
-        if (conditions == null) {
-            return true;
-        }
-        int i = 0;
-        while (i < conditions.size() && conditions.get(i).isValid()) {
-            i++;
-        }
-        return i == conditions.size();
-    }
-
-    @Override
-    public void execute() {
-        for (final Action<T> a : actions) {
-            a.execute();
-        }
-    }
-
-    @Override
-    public List<Action<T>> getActions() {
-        return Collections.unmodifiableList(actions);
-    }
-
-    @Override
-    public List<Condition<T>> getConditions() {
-        return Collections.unmodifiableList(conditions);
-    }
-
-    @Override
-    public ListSet<Molecule> getInfluencedMolecules() {
-        return influenced == null ? null : ListSets.unmodifiableListSet(influenced);
-    }
-
-    /**
-     * @param influenced
-     *            the new influenced molecules. Can be null.
-     */
-    @SuppressWarnings("unchecked")
-    protected void setInfluencedMolecules(final ListSet<? extends Molecule> influenced) {
-        this.influenced = (ListSet<Molecule>) influenced;
-    }
-
-    @Override
-    public ListSet<Molecule> getInfluencingMolecules() {
-        return influenced == null ? null : ListSets.unmodifiableListSet(influencing);
-    }
-
-    /**
-     * @param influencing
-     *            the new influencing molecules. Can be null.
-     */
-    @SuppressWarnings("unchecked")
-    protected void setInfluencingMolecules(final ListSet<? extends Molecule> influencing) {
-        this.influencing = (ListSet<Molecule>) influencing;
-    }
-
-
-    @Override
-    public Node<T> getNode() {
+    public final Node<T> getNode() {
         return node;
     }
 
-    /**
-     * @return a {@link String} representation of the rate
-     */
-    protected String getRateAsString() {
-        return Double.toString(dist.getRate());
-    }
 
-    @Override
-    public void setActions(final List<Action<T>> a) {
-        actions = Objects.requireNonNull(a, "The actions list can't be null");
-        Context lessStrict = Context.LOCAL;
-        influenced = new LinkedListSet<Molecule>();
-        for (final Action<T> act : actions) {
-            final Context condcontext = Objects.requireNonNull(act, "Actions can't be null").getContext();
-            lessStrict = lessStrict.isMoreStrict(condcontext) ? condcontext : lessStrict;
-            final List<? extends Molecule> mod = act.getModifiedMolecules();
-            /*
-             * This check is needed because of the meaning of a null list of
-             * modified molecules: it means that the reaction will influence
-             * every other reaction. This must be managed directly by the
-             * dependency graph, and consequently the whole reaction must have a
-             * null list of modified molecules.
-             */
-            if (mod != null) {
-                influenced.addAll(mod);
-            } else {
-                influenced = null;
-                break;
-            }
-        }
-        setOutputContext(lessStrict);
+    private static <E> ListSet<E> optionallyImmodifiableView(final ListSet<E> in) {
+        return in == null ? null : ListSets.unmodifiableListSet(in);
     }
-
-    @Override
-    public void setConditions(final List<Condition<T>> c) {
-        conditions = c;
-        Context lessStrict = Context.LOCAL;
-        influencing = new LinkedListSet<Molecule>();
-        for (final Condition<T> cond : conditions) {
-            final Context condcontext = cond.getContext();
-            lessStrict = lessStrict.isMoreStrict(condcontext) ? condcontext : lessStrict;
-            final ListSet<? extends Molecule> mod = cond.getInfluencingMolecules();
-            /*
-             * This check is needed because of the meaning of a null list of
-             * modified molecules: it means that the reaction will influence
-             * every other reaction. This must be managed directly by the
-             * dependency graph, and consequently the whole reaction must have a
-             * null list of modified molecules.
-             */
-            if (mod != null) {
-                influencing.addAll(mod);
-            } else {
-                influencing = null;
-                break;
-            }
-        }
-        setInputContext(lessStrict);
-    }
-
 }

@@ -39,7 +39,7 @@ public class MoleculeHasConcentration<T> extends AbstractCondition<T> {
         super(node);
         this.mol = Objects.requireNonNull(molecule);
         this.value = Objects.requireNonNull(value);
-        addReadMolecule(this.mol);
+        declareDependencyOn(this.mol);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class MoleculeHasConcentration<T> extends AbstractCondition<T> {
     }
 
     @Override
-    public double getPropensityConditioning() {
+    public double getPropensityContribution() {
         return isValid() ? 1 : 0;
     }
 

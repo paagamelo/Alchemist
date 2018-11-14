@@ -13,6 +13,9 @@ import it.unibo.alchemist.boundary.monitors.AbstractFXDisplay;
 import it.unibo.alchemist.boundary.monitors.FX2DDisplay;
 import it.unibo.alchemist.boundary.monitors.FXMapDisplay;
 import it.unibo.alchemist.core.interfaces.Simulation;
+import it.unibo.alchemist.input.ActionOnKey;
+import it.unibo.alchemist.input.KeyboardActionListener;
+import it.unibo.alchemist.input.KeyboardTriggerAction;
 import it.unibo.alchemist.model.interfaces.Concentration;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.MapEnvironment;
@@ -35,10 +38,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.Event;
 import javafx.scene.Scene;
-import javafx.scene.canvas.Canvas;
-import javafx.scene.input.KeyCode;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
@@ -58,7 +58,7 @@ import static it.unibo.alchemist.boundary.gui.controller.ButtonsBarController.BU
  *
  * @param <T> the {@link Concentration} type
  */
-public class SingleRunApp<T, P extends Position2D<? extends P>> extends Application {
+public class SingleRunApp<T, P extends Position2D<P>> extends Application {
     /**
      * Main layout without nested layouts. Must inject eventual other nested layouts.
      */
@@ -87,7 +87,7 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
     @Nullable
     private Simulation<T, P> simulation;
     @Nullable
-    private AbstractFXDisplay<T> displayMonitor;
+    private AbstractFXDisplay<T, P> displayMonitor;
     private PlayPauseMonitor<T, P> playPauseMonitor;
     private FXTimeMonitor<T, P> timeMonitor;
     private FXStepMonitor<T, P> stepMonitor;
@@ -207,14 +207,13 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
                 throw new IllegalArgumentException(exception);
             }
         });
-        final Optional<AbstractFXDisplay<T>> optDisplayMonitor = Optional.ofNullable(this.displayMonitor);
+        final Optional<AbstractFXDisplay<T, P>> optDisplayMonitor = Optional.ofNullable(this.displayMonitor);
         final Pane rootLayout;
         try {
             rootLayout = FXResourceLoader.getLayout(AnchorPane.class, this, ROOT_LAYOUT);
             final StackPane main = (StackPane) rootLayout.getChildren().get(0);
-//            main.setPickOnBounds(false);
+            final Scene scene = new Scene(rootLayout);
             optDisplayMonitor.ifPresent(dm -> {
-                final Canvas interactions = new Canvas(); // canvas used for user input and feedback (eg. box elements)
                 dm.widthProperty().bind(main.widthProperty());
                 dm.heightProperty().bind(main.heightProperty());
                 dm.widthProperty().addListener((observable, oldValue, newValue) -> {
@@ -227,9 +226,9 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
                         dm.repaint();
                     }
                 });
-                main.getChildren().add(interactions);
+                main.getChildren().addAll(dm.getInteractionCanvases());
                 main.getChildren().add(dm);
-                dm.setInteractionCanvas(interactions);
+                initKeybindings(scene, dm.getKeyboardListener());
             });
             this.timeMonitor = new FXTimeMonitor<>();
             this.stepMonitor = new FXStepMonitor<>();
@@ -255,8 +254,8 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
                 System.exit(0);
             });
             primaryStage.getIcons().add(SVGImageUtils.getSvgImage(SVGImageUtils.DEFAULT_ALCHEMIST_ICON_PATH));
-            final Scene scene = new Scene(rootLayout);
-            initKeybindings(scene);
+//            final Scene scene = new Scene(rootLayout);
+//            initKeybindings(scene);
             primaryStage.setScene(scene);
             initialized = true;
             primaryStage.show();
@@ -291,25 +290,18 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
      * Initializes the key bindings.
      * <p>
      * Should be overridden to implement keyboard interaction with the GUI.
-     *
-     * @param scene the Scene that receives the {@link Event}s
      */
-    protected void initKeybindings(final Scene scene) {
-        scene.setOnKeyPressed(event -> {
-//            switch (event.getCode()) {
-//                case P:
-//                    playPauseMonitor.fireEvent(new ActionEvent(event.getSource(), playPauseMonitor));
-//                    break;
-//                default:
-//                    break;
-//            }
-            // TODO remove if and use switch (like comment above) for new key bindings
-            if (event.getCode().equals(KeyCode.P)) {
-                playPauseMonitor.fireEvent(new ActionEvent(event.getSource(), playPauseMonitor));
+    protected void initKeybindings(final Scene scene, final KeyboardActionListener listener) {
+        scene.setOnKeyPressed(e -> {
+            switch (e.getCode()) {
+                case P: playPauseMonitor.fireEvent(new ActionEvent(e.getSource(), playPauseMonitor));
+                    e.consume();
+                    break;
+                default: listener.action(new KeyboardTriggerAction(ActionOnKey.PRESSED, e.getCode()), e);
+                    break;
             }
-
-            event.consume();
         });
+        scene.setOnKeyReleased(e -> listener.action(new KeyboardTriggerAction(ActionOnKey.RELEASED, e.getCode()), e));
     }
 
     /**
@@ -389,8 +381,8 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
         }
 
         try {
-            final Class<? extends AbstractFXDisplay<T>> clazz;
-            clazz = (Class<? extends AbstractFXDisplay<T>>) Class.forName(className);
+            final Class<? extends AbstractFXDisplay<T, P>> clazz;
+            clazz = (Class<? extends AbstractFXDisplay<T, P>>) Class.forName(className);
 
             final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
             Constructor<?> constructor = null;
@@ -405,7 +397,7 @@ public class SingleRunApp<T, P extends Position2D<? extends P>> extends Applicat
                 throw new IllegalArgumentException();
             } else {
                 try {
-                    displayMonitor = (AbstractFXDisplay<T>) constructor.newInstance();
+                    displayMonitor = (AbstractFXDisplay<T, P>) constructor.newInstance();
                 } catch (final IllegalAccessException | IllegalArgumentException | InstantiationException
                         | InvocationTargetException | ExceptionInInitializerError exception) {
                     L.warn("No valid constructor found");

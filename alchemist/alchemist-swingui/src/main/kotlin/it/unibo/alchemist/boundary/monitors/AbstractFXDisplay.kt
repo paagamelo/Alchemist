@@ -13,13 +13,12 @@ import it.unibo.alchemist.boundary.gui.effects.EffectGroup
 import it.unibo.alchemist.boundary.gui.utility.DataFormatFactory
 import it.unibo.alchemist.boundary.interfaces.DrawCommand
 import it.unibo.alchemist.boundary.interfaces.FXOutputMonitor
-import it.unibo.alchemist.boundary.monitors.utility.SelectionBox
 import it.unibo.alchemist.boundary.wormhole.implementation.Wormhole2D
 import it.unibo.alchemist.boundary.wormhole.interfaces.BidimensionalWormhole
+import it.unibo.alchemist.input.KeyboardActionListener
 import it.unibo.alchemist.model.implementations.times.DoubleTime
 import it.unibo.alchemist.model.interfaces.Concentration
 import it.unibo.alchemist.model.interfaces.Environment
-import it.unibo.alchemist.model.interfaces.Node
 import it.unibo.alchemist.model.interfaces.Position
 import it.unibo.alchemist.model.interfaces.Position2D
 import it.unibo.alchemist.model.interfaces.Reaction
@@ -29,13 +28,6 @@ import javafx.collections.FXCollections
 import javafx.collections.ObservableList
 import javafx.scene.canvas.Canvas
 import javafx.scene.canvas.GraphicsContext
-import javafx.scene.input.InputEvent
-import javafx.scene.input.MouseEvent
-import java.awt.Point
-import java.lang.reflect.InvocationTargetException
-import java.lang.reflect.Method
-import java.lang.reflect.Modifier
-import java.util.Optional
 import java.util.Queue
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.Semaphore
@@ -48,16 +40,15 @@ import java.util.stream.Stream
  *
  * @param <T> The type which describes the [Concentration] of a molecule
  * @param <P> The type of position
-</P></T> */
-
-abstract class AbstractFXDisplay<T>
+ */
+abstract class AbstractFXDisplay<T, P : Position2D<P>>
 /**
  * Main constructor. It lets the developer specify the number of steps.
  *
  * @param steps the number of steps
  * @see .setStep
  */
-@JvmOverloads constructor(steps: Int = DEFAULT_NUMBER_OF_STEPS) : Canvas(), FXOutputMonitor<T, Position2D<*>> {
+@JvmOverloads constructor(steps: Int = DEFAULT_NUMBER_OF_STEPS) : Canvas(), FXOutputMonitor<T, P> {
 
     private val effectStack: ObservableList<EffectGroup> = FXCollections.observableArrayList()
     private val mutex = Semaphore(1)
@@ -67,149 +58,15 @@ abstract class AbstractFXDisplay<T>
     private var realTime: Boolean = false
     @Volatile private var commandQueue: ConcurrentLinkedQueue<() -> Unit> = ConcurrentLinkedQueue()
     private var viewStatus = DEFAULT_VIEW_STATUS
-    protected lateinit var wormhole: BidimensionalWormhole<Position2D<*>>
+    protected lateinit var wormhole: BidimensionalWormhole<P>
         private set
-    private lateinit var interactions: Canvas
-    private lateinit var nodes: Map<Node<T>, Position2D<*>>
-    private var panPosition: Position2D<*>? = null
-    private var selection: SelectionBox<T>? = null
+    private val interactions: InteractionManager<T, P> by lazy { InteractionManager(this) }
 
     init {
-        firstTime = true // ?
+        firstTime = true
         setStep(steps)
-        enableEventReceiving()
         style = "-fx-background-color: #FFF;"
-    }
-
-    /**
-     * Enables [MouseEvent] receiving by enabling Focus and requesting it.
-     */
-    private fun enableEventReceiving() {
-        isFocusTraversable = true
-        isFocused = true
-    }
-
-    /**
-     * Initializes the mouse interaction to the [Canvas] dedicated to interactions.
-     * Should be overridden to implement mouse interaction with the GUI.
-     * Called in setInteractionCanvas
-     */
-    protected open fun initMouseListener() {
-        interactions.setOnMousePressed {
-            when (getViewStatus()) {
-                FXOutputMonitor.ViewStatus.PANNING -> onPanInitiated(it)
-                FXOutputMonitor.ViewStatus.SELECTING -> onSelectInitiated(it)
-                else -> {
-                }
-            }
-        }
-        interactions.setOnMouseDragged {
-            when (getViewStatus()) {
-                FXOutputMonitor.ViewStatus.PANNING -> onPanning(it)
-                FXOutputMonitor.ViewStatus.SELECTING -> onSelecting(it)
-                else -> {
-                }
-            }
-        }
-        interactions.setOnMouseReleased {
-            when (getViewStatus()) {
-                FXOutputMonitor.ViewStatus.PANNING -> onPanned(it)
-                FXOutputMonitor.ViewStatus.SELECTING -> onSelected(it)
-                else -> {
-                }
-            }
-        }
-        interactions.setOnMouseExited {
-            when (getViewStatus()) {
-                FXOutputMonitor.ViewStatus.PANNING -> onPanCanceled(it)
-                FXOutputMonitor.ViewStatus.SELECTING -> onSelectCanceled(it)
-                else -> {
-                }
-            }
-        }
-    }
-
-    /**
-     * Called when a pan gesture is initiated.
-     * @param event the caller
-     */
-    protected fun onPanInitiated(event: MouseEvent) {
-        getEventPosition(event).ifPresent { panPosition = it }
-        event.consume()
-    }
-
-    /**
-     * Called while a pan gesture is in progress and the view is moving.
-     * @param event the caller
-     */
-    protected fun onPanning(event: MouseEvent) {
-        if (panPosition != null) {
-            getEventPosition(event).ifPresent {
-                val currentPoint = wormhole.getViewPoint(it)
-                val newPoint = wormhole.getViewPoint(panPosition!!).let { makePoint(
-                    (wormhole.viewPosition.getX() + (currentPoint.getX() - it.getX())),
-                    (wormhole.viewPosition.getY() + (currentPoint.getY() - it.getY()))) }
-                wormhole.viewPosition = newPoint
-                panPosition = wormhole.getEnvPoint(currentPoint)
-                repaint()
-            }
-        }
-        event.consume()
-    }
-
-    /**
-     * Called when a pan gesture finishes.
-     */
-    protected fun onPanned(event: MouseEvent) {
-        panPosition = null
-        event.consume()
-    }
-
-    /**
-     * Called when a pan gesture is canceled.
-     */
-    protected fun onPanCanceled(event: MouseEvent) {
-        panPosition = null
-        event.consume()
-    }
-
-    /**
-     * Called when a elements gesture is initiated
-     */
-    protected fun onSelectInitiated(event: MouseEvent) {
-        selection = SelectionBox(makePoint(event.x, event.y), interactions.graphicsContext2D, wormhole)
-        event.consume()
-    }
-
-    /**
-     * Called while a elements gesture is in progress and the elements is changing.
-     */
-    protected fun onSelecting(event: MouseEvent) {
-        if (selection != null) {
-            selection!!.update(makePoint(event.x, event.y))
-        }
-        event.consume()
-    }
-
-    /**
-     * Called when a elements gesture finishes.
-     */
-    protected fun onSelected(event: MouseEvent) {
-        if (selection != null) {
-            selection!!.finalize(nodes)
-        }
-        event.consume()
-    }
-
-    /**
-     * Called when a select gesture is canceled.
-     */
-    protected fun onSelectCanceled(event: MouseEvent) {
-        if (selection != null) {
-            selection!!.cancel()
-            selection = null
-        }
-        event.consume()
+        isMouseTransparent = true
     }
 
     override fun getViewStatus(): FXOutputMonitor.ViewStatus {
@@ -218,48 +75,6 @@ abstract class AbstractFXDisplay<T>
 
     override fun setViewStatus(viewStatus: FXOutputMonitor.ViewStatus) {
         this.viewStatus = viewStatus
-    }
-
-    /**
-     * The method returns the [Position] in the [Environment] of the given `Event`, if any.
-     *
-     * @param event the event to check
-     * @return the position, if any
-     */
-    protected fun getEventPosition(event: InputEvent): Optional<Position2D<*>> {
-        val wormhole = wormhole
-        val methods = event.javaClass.methods
-        var getX = Optional.empty<Method>()
-        var getY = Optional.empty<Method>()
-        for (method in methods) {
-            val modifier = method.modifiers
-            if (Modifier.isPublic(modifier) && !Modifier.isAbstract(modifier)) {
-                val name = method.name
-                if (name == GET_X_METHOD_NAME) {
-                    getX = Optional.of(method)
-                } else if (name == GET_Y_METHOD_NAME) {
-                    getY = Optional.of(method)
-                }
-                if (getX.isPresent && getY.isPresent) {
-                    break
-                }
-            }
-        }
-        return if (getX.isPresent && getY.isPresent) {
-            try {
-                val x = getX.get().invoke(event) as Number
-                val y = getY.get().invoke(event) as Number
-                Optional.of(wormhole.getEnvPoint(makePoint(x, y)))
-            } catch (e: Exception) {
-                when (e) {
-                    is IllegalAccessException,
-                    is InvocationTargetException -> Optional.empty<Position2D<*>>()
-                    else -> throw e
-                }
-            }
-        } else {
-            Optional.empty()
-        }
     }
 
     override fun getStep(): Int {
@@ -297,6 +112,7 @@ abstract class AbstractFXDisplay<T>
                     mayRender.set(true)
                 }
             }
+            interactions.repaint()
         } catch (e: UninitializedPropertyAccessException) {
             // wormhole hasn't been initialized
         }
@@ -311,7 +127,7 @@ abstract class AbstractFXDisplay<T>
      * @return a function of what to do to draw the background
      * @see .repaint
      */
-    protected fun drawBackground(graphicsContext: GraphicsContext, environment: Environment<T, Position2D<*>>): () -> Unit {
+    protected fun drawBackground(graphicsContext: GraphicsContext, environment: Environment<T, P>): () -> Unit {
         return { graphicsContext.clearRect(0.0, 0.0, width, height) }
     }
 
@@ -332,25 +148,15 @@ abstract class AbstractFXDisplay<T>
         this.effectStack.addAll(effects)
     }
 
-    /**
-     * Returns the interaction canvas.
-     */
-    protected fun getInteractionCanvas(): Canvas = interactions
+    override fun getInteractionCanvases(): List<Canvas> = interactions.canvases
 
-    override fun setInteractionCanvas(canvas: Canvas) {
-        interactions = canvas
-        interactions.widthProperty().bind(this.widthProperty())
-        interactions.heightProperty().bind(this.heightProperty())
-        interactions.toFront()
-        interactions.graphicsContext2D.globalAlpha = 0.5
-        initMouseListener()
-    }
+    override fun getKeyboardListener(): KeyboardActionListener = interactions.keyboardListener
 
-    override fun initialized(environment: Environment<T, Position2D<*>>) {
+    override fun initialized(environment: Environment<T, P>) {
         stepDone(environment, null, DoubleTime(), 0)
     }
 
-    override fun stepDone(environment: Environment<T, Position2D<*>>, reaction: Reaction<T>?, time: Time, step: Long) {
+    override fun stepDone(environment: Environment<T, P>, reaction: Reaction<T>?, time: Time, step: Long) {
         if (firstTime) {
             synchronized(this) {
                 if (firstTime) {
@@ -368,15 +174,16 @@ abstract class AbstractFXDisplay<T>
      *
      * @param environment the `Environment`
      */
-    protected open fun init(environment: Environment<T, Position2D<*>>) {
+    protected open fun init(environment: Environment<T, P>) {
         wormhole = Wormhole2D(environment, this)
         wormhole.center()
         wormhole.optimalZoom()
+        interactions.setWormhole(wormhole)
         firstTime = false
         System.currentTimeMillis()
     }
 
-    override fun finished(environment: Environment<T, Position2D<*>>, time: Time, step: Long) {
+    override fun finished(environment: Environment<T, P>, time: Time, step: Long) {
         update(environment, time)
         firstTime = true
     }
@@ -387,11 +194,16 @@ abstract class AbstractFXDisplay<T>
      * @param environment the `Environment`
      * @param time the current `Time` of simulation
      */
-    private fun update(environment: Environment<T, Position2D<*>>, time: Time) {
-        if (Thread.holdsLock(environment)) {
-            nodes = environment.nodes.associate { Pair(it, environment.getPosition(it)) }
-            time.toDouble()
+    private fun update(environment: Environment<T, P>, time: Time) {
 //            environment.simulation.schedule{ environment.moveNodeToPosition(environment.getNodeByID(0), LatLongPosition(8, 8)) }
+        if (Thread.holdsLock(environment)) {
+            time.toDouble()
+            interactions.environment = environment
+            /*
+             * TODO: Future optimization -- Let the simulation (or the environment, probably both) expose the last moment
+             * at which a change in position occurred. This way, we don't need to constantly regenerate the position map.
+             */
+            interactions.nodes = environment.nodes.associate { Pair(it, environment.getPosition(it)) }
             val graphicsContext = this.graphicsContext2D
             val background = Stream.of(drawBackground(graphicsContext, environment))
             val effects = effects
@@ -402,13 +214,12 @@ abstract class AbstractFXDisplay<T>
             commandQueue = Stream
                 .concat(background, effects)
                 .collect(Collectors.toCollection { ConcurrentLinkedQueue<() -> Unit>() })
+            interactions.simulationStep()
             repaint()
         } else {
             throw IllegalStateException("Only the simulation thread can dictate GUI updates")
         }
     }
-
-    private fun makePoint(x: Number, y: Number) = Point(x.toInt(), y.toInt())
 
     companion object {
         /**
@@ -435,7 +246,5 @@ abstract class AbstractFXDisplay<T>
          * The default view status.
          */
         private val DEFAULT_VIEW_STATUS = FXOutputMonitor.ViewStatus.PANNING
-        private const val GET_X_METHOD_NAME = "getX"
-        private const val GET_Y_METHOD_NAME = "getY"
     }
 }
