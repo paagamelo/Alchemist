@@ -28,18 +28,14 @@ import java.util.stream.Collectors;
 
 import it.unibo.alchemist.model.implementations.actions.AbstractNeighborAction;
 import it.unibo.alchemist.model.implementations.conditions.AbstractNeighborCondition;
-import it.unibo.alchemist.model.interfaces.Action;
-import it.unibo.alchemist.model.interfaces.Condition;
-import it.unibo.alchemist.model.interfaces.Environment;
-import it.unibo.alchemist.model.interfaces.Node;
-import it.unibo.alchemist.model.interfaces.Time;
-import it.unibo.alchemist.model.interfaces.TimeDistribution;
+import it.unibo.alchemist.model.implementations.timedistributions.ExponentialTime;
+import it.unibo.alchemist.model.interfaces.*;
 
 
 /** 
  * A biochemical Reaction.
  */
-public final class BiochemicalReaction extends ChemicalReaction<Double> {
+public final class BiochemicalReaction extends AbstractReaction<Double> {
 
     private static final long serialVersionUID = 3849210665619933894L;
     private Map<Node<Double>, Double> validNeighbors = new LinkedHashMap<>(0);
@@ -73,21 +69,17 @@ public final class BiochemicalReaction extends ChemicalReaction<Double> {
      *            the environment
      */
     public BiochemicalReaction(final Node<Double> n, final TimeDistribution<Double> td, final Environment<Double, ?> env) {
+        // TODO: change parameter order
         super(n, td);
         node = n;
         environment = env;
     }
 
     @Override
-    public BiochemicalReaction cloneOnNewNode(final Node<Double> node, final Time currentTime) {
-        return new BiochemicalReaction(node, getTimeDistribution().clone(currentTime), environment);
-    }
-
-    @Override 
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<Double, ?> env) {
+    public void update(final Time curTime, final boolean executed) {
         if (neighborConditionsPresent) {
             validNeighbors.clear();
-            validNeighbors = env.getNeighborhood(node).getNeighbors().stream().collect(Collectors.<Node<Double>, Node<Double>, Double>toMap(
+            validNeighbors = environment.getNeighborhood(node).getNeighbors().stream().collect(Collectors.<Node<Double>, Node<Double>, Double>toMap(
                     n -> n,
                     n -> 0d));
             for (final Condition<Double> cond : getConditions()) {
@@ -99,10 +91,18 @@ public final class BiochemicalReaction extends ChemicalReaction<Double> {
                 }
             }
         }
-        super.updateInternalStatus(curTime, executed, env);
+        super.update(curTime, executed);
     }
 
-    @Override 
+    @Override
+    protected AbstractReaction<Double> buildNewReaction(
+            final Node<Double> n,
+            final TimeDistribution<Double> distribution,
+            final Time currentTime) {
+        return new BiochemicalReaction(n, distribution, environment);
+    }
+
+    @Override
     public void execute() {
         if (neighborConditionsPresent) {
             final Optional<Map.Entry<Node<Double>, Double>> neighTarget = validNeighbors.entrySet().stream().max(Comparator.comparing(Map.Entry::getValue));

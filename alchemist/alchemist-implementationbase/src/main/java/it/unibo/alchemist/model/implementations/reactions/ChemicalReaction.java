@@ -8,11 +8,12 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.reactions;
 
-import it.unibo.alchemist.model.interfaces.Condition;
+import it.unibo.alchemist.model.implementations.timedistributions.ExponentialTime;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
 
 /**
  * 
@@ -22,53 +23,36 @@ import it.unibo.alchemist.model.interfaces.TimeDistribution;
 public class ChemicalReaction<T> extends AbstractReaction<T> {
 
     private static final long serialVersionUID = -5260452049415003046L;
-    private double currentRate;
 
     /**
-     * @param n
+     * @param node
      *            node
-     * @param pd
-     *            time distribution
+     * @param randomGenerator the simulation {@link RandomGenerator}
+     * @param rate the markovian rate for this reaction (which will get multiplied by the propensity contribution of
+     *             each condition as returned by
+     *             {@link it.unibo.alchemist.model.interfaces.Condition#getPropensityContribution()}
      */
-    public ChemicalReaction(final Node<T> n, final TimeDistribution<T> pd) {
-        super(n, pd);
+    public ChemicalReaction(final RandomGenerator randomGenerator, final Node<T> node, final double rate) {
+        this(node, new ExponentialTime<>(rate, randomGenerator));
     }
 
     /**
-     * {@inheritDoc}
+     *
+     * @param node the node
+     * @param timeDistribution the {@link ExponentialTime} the time distribution this reaction should use. Note: you
+     *                         can not share time distributions across reactions.
      */
-    @Override
-    public ChemicalReaction<T> cloneOnNewNode(final Node<T> n, final Time currentTime) {
-        return makeClone(() -> new ChemicalReaction<>(n, getTimeDistribution().clone(currentTime)));
+    public ChemicalReaction(final Node<T> node, final ExponentialTime<T> timeDistribution) {
+        super(node, timeDistribution);
     }
 
     @Override
-    public final void initializationComplete(final Time t, final Environment<T, ?> env) {
-        update(t, true, env);
-    }
-
-    /**
-     * Subclasses must call super.updateInternalStatus for the rate to get updated in case of method override.
-     */
-    @Override
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<T, ?> env) {
-        currentRate = getTimeDistribution().getRate();
-        for (final Condition<T> cond : getConditions()) {
-            final double v = cond.getPropensityContribution();
-            if (v == 0) {
-                currentRate = 0;
-                break;
-            }
-            if (v < 0) {
-                throw new IllegalStateException("Condition " + cond + " returned a negative propensity conditioning value");
-            }
-            currentRate *= cond.getPropensityContribution();
+    protected ChemicalReaction<T> buildNewReaction(final Node<T> n, final TimeDistribution<T> distribution, final Time currentTime) {
+        if (distribution instanceof  ExponentialTime) {
+            return new ChemicalReaction<>(n, (ExponentialTime<T>) distribution);
         }
-    }
-
-    @Override
-    public final double getRate() {
-        return currentRate;
+        throw new IllegalArgumentException("Chemical reactions can only use " + ExponentialTime.class.getSimpleName()
+                + ", attempted to clone one injecting a " + distribution.getClass().getSimpleName());
     }
 
 }

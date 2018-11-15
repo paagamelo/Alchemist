@@ -47,20 +47,6 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
     void execute();
 
     /**
-     * This method is called when the environment has completed its
-     * initialization. Can be used by this reaction to compute its next
-     * execution time - in case such computation requires an inspection of the
-     * environment.
-     * 
-     * @param t
-     *            the time at which the initialization of this reaction was
-     *            accomplished
-     * @param env
-     *            the environment
-     */
-    void initializationComplete(Time t, Environment<T, ?> env);
-
-    /**
      * @return The list of {@link Action}s of the {@link Reaction}. There is no
      *         specification if the list will be a copy of the internal list or
      *         a reference. It will depend on implementations. Please be careful
@@ -121,7 +107,7 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
      * @return The global {@link Time} at which this reaction is scheduled to be
      *         executed
      */
-    Time getTau();
+    Time getTau(); // TODO: refactor to getPutativeTime()
 
     /**
      * @return the {@link TimeDistribution} for this {@link Reaction}
@@ -155,9 +141,7 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
      *            the current {@link Time} of execution. This is mandatory in
      *            order to correctly compute the time shift of an
      *            already-scheduled reaction
-     * @param env
-     *            the current environment
      */
-    void update(Time curTime, boolean executed, Environment<T, ?> env);
+    void update(Time curTime, boolean executed);
 
 }

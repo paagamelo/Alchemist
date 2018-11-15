@@ -15,6 +15,8 @@ import static org.junit.Assert.fail;
 
 import java.util.List;
 
+import it.unibo.alchemist.model.implementations.reactions.SAPEREReaction;
+import it.unibo.alchemist.model.implementations.times.DoubleTime;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.Before;
@@ -82,12 +84,18 @@ public final class TestIncarnation {
 
     private void testTD(final String param, final double rate, final double occurrence) {
         final TimeDistribution<List<ILsaMolecule>> t0 = incarnation.createTimeDistribution(rand, env, node, param);
+        final Environment<List<ILsaMolecule>, ?> env = new Continuous2DEnvironment<>();
         assertNotNull(t0);
-        if (!Double.isNaN(rate)) {
-            assertEquals(rate, t0.getRate(), 0d);
-        }
-        if (!Double.isNaN(occurrence)) {
-            assertEquals(occurrence, t0.getNextOccurence().toDouble(), 0d);
+        final boolean testRate = !Double.isNaN(rate);
+        final boolean testNextOccurrence = !Double.isNaN(occurrence);
+        if (testRate || testNextOccurrence) {
+            t0.initializationComplete(new SAPEREReaction(env, new LsaNode(env), new MersenneTwister(), t0), DoubleTime.ZERO_TIME);
+            if (testRate) {
+                assertEquals(rate, t0.getRate(), 0d);
+            }
+            if (testNextOccurrence) {
+                assertEquals(occurrence, t0.getNextOccurence().toDouble(), 0d);
+            }
         }
     }
 

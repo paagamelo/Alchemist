@@ -76,7 +76,8 @@ public final class BiochemistryIncarnation<P extends Position<P>> implements Inc
     }
 
     @Override
-    public Reaction<Double> createReaction(final RandomGenerator rand, 
+    public Reaction<Double> createReaction(
+            final RandomGenerator rand,
             final Environment<Double, P> env, 
             final Node<Double> node,
             final TimeDistribution<Double> time, 

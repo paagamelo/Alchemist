@@ -14,6 +14,8 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import it.unibo.alchemist.model.implementations.reactions.ReactionLike;
+import it.unibo.alchemist.model.implementations.times.DoubleTime;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.junit.Test;
@@ -52,6 +54,7 @@ public class TestIncarnation {
         assertNotNull(node);
         final TimeDistribution<Object> immediately = INC.createTimeDistribution(rng, env, node, null);
         assertNotNull(immediately);
+//        immediately.initializationComplete(new Event<>(node, immediately), DoubleTime.ZERO_TIME);
         assertTrue(Double.isInfinite(immediately.getRate()));
         assertTrue(immediately.getRate() > 0);
         final TimeDistribution<Object> standard = INC.createTimeDistribution(rng, env, node, "3");
@@ -96,7 +99,7 @@ public class TestIncarnation {
 
     private static void testIsSendToNeighbor(final Reaction<Object> program) {
         assertNotNull(program);
-        assertTrue(program instanceof ChemicalReaction);
+        assertTrue(program instanceof ReactionLike);
         assertFalse(program.getConditions().isEmpty());
         assertEquals(1, program.getConditions().size());
         final Condition<Object> check = program.getConditions().get(0);

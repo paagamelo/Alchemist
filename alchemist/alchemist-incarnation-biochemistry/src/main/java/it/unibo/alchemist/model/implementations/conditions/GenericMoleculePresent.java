@@ -70,7 +70,7 @@ public class GenericMoleculePresent<T extends Number> extends
 
     @Override
     public String toString() {
-        return molecule.toString() + ">=" + qty;
+        return molecule.toString() + ">=" + qty+'[' + isValid() + ']';
     }
 
     @Override

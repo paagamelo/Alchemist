@@ -163,7 +163,7 @@ public class TestEnvironmentNodes {
      * Test if env nodes with same concentration are selected randomly.
      */
     @Test
-    public void test5() {
+    public void testDiffusionInEnvironment() {
         final Environment<Double, Euclidean2DPosition> env = new BioRect2DEnvironment();
         final CellNode<Euclidean2DPosition> cellNode = new CellNodeImpl<>(env);
         final EnvironmentNode envNode1 = new EnvironmentNodeImpl(env);
@@ -181,6 +181,11 @@ public class TestEnvironmentNodes {
         final double total = 1000.0;
         cellNode.setConcentration(a, 1000.0);
         env.setLinkingRule(new it.unibo.alchemist.model.implementations.linkingrules.ConnectWithinDistance<>(1));
+        /*
+         * [4]--[1]--[0]--[2]--[3]
+         *
+         * Molecules should move towards nodes [4] and [3]
+         */
         final Euclidean2DPosition pos1 = new Euclidean2DPosition(0, -0.75);
         final Euclidean2DPosition pos2 = new Euclidean2DPosition(0, 0.75);
         final Euclidean2DPosition pos3 = new Euclidean2DPosition(0, 1.5);
@@ -226,7 +231,6 @@ public class TestEnvironmentNodes {
     @Test
     public void testEnv1() {
         final double conA = (double) testNoVar("testEnv1.yml").getNodes().stream()
-                .parallel()
                 .filter(n -> n.getClass().equals(EnvironmentNodeImpl.class))
                 .findFirst()
                 .get()

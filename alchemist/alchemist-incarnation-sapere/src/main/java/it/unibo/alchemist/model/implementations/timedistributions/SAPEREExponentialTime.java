@@ -30,7 +30,7 @@ import java.util.Objects;
  * rate equation.
  * 
  */
-public class SAPEREExponentialTime extends ExponentialTime<List<ILsaMolecule>> implements SAPERETimeDistribution {
+public final class SAPEREExponentialTime extends ExponentialTime<List<ILsaMolecule>> implements SAPERETimeDistribution {
 
     /**
      * 
@@ -63,7 +63,7 @@ public class SAPEREExponentialTime extends ExponentialTime<List<ILsaMolecule>> i
      *            the {@link RandomGenerator}
      */
     public SAPEREExponentialTime(final String rateEquation, final Time start, final RandomGenerator random) {
-        super(Double.NaN, start, Objects.requireNonNull(random));
+        super(0, start, Objects.requireNonNull(random));
         double temp = 0d;
         boolean numeric = true;
         try {
@@ -85,7 +85,7 @@ public class SAPEREExponentialTime extends ExponentialTime<List<ILsaMolecule>> i
     }
 
     @Override
-    public double getRate() {
+    public double getMarkovianRate() {
         return numericRate ? staticRate : (Double) exp.calculate(matches).getValue(matches);
     }
 

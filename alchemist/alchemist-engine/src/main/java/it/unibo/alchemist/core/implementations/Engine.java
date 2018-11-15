@@ -178,7 +178,7 @@ public final class Engine<T, P extends Position<? extends P>> implements Simulat
                 }
                 toUpdate.forEach(this::updateReaction);
             }
-            mu.update(currentTime, true, env);
+            mu.update(currentTime, true);
             ipq.updateReaction(mu);
             monitorLock.read();
             for (final OutputMonitor<T, P> m : monitors) {
@@ -431,7 +431,7 @@ public final class Engine<T, P extends Position<? extends P>> implements Simulat
 
     private void scheduleReaction(final Reaction<T> r) {
         dg.createDependencies(r);
-        r.initializationComplete(currentTime, env);
+        r.getTimeDistribution().initializationComplete(r, currentTime);
         ipq.addReaction(r);
     }
 
@@ -447,7 +447,7 @@ public final class Engine<T, P extends Position<? extends P>> implements Simulat
 
     private void updateReaction(final Reaction<T> r) {
         final Time t = r.getTau();
-        r.update(currentTime, false, env);
+        r.update(currentTime, false);
         if (!r.getTau().equals(t)) {
             ipq.updateReaction(r);
         }

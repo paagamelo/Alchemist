@@ -110,7 +110,15 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
      *            Markovian Rate
      */
     @SuppressWarnings("unchecked")
-    public SAPEREGradient(final Environment<List<ILsaMolecule>, P> env, final ILsaNode n, final ILsaMolecule sourceTemplate, final ILsaMolecule gradientTemplate, final int valuePosition, final String expression, final ILsaMolecule contextTemplate, final double gradThreshold, final TimeDistribution<List<ILsaMolecule>> td) {
+    public SAPEREGradient(final Environment<List<ILsaMolecule>, P> env,
+                          final ILsaNode n,
+                          final ILsaMolecule sourceTemplate,
+                          final ILsaMolecule gradientTemplate,
+                          final int valuePosition,
+                          final String expression,
+                          final ILsaMolecule contextTemplate,
+                          final double gradThreshold,
+                          final TimeDistribution<List<ILsaMolecule>> td) {
         super(n, td);
         setInputContext(Context.LOCAL);
         setOutputContext(Context.NEIGHBORHOOD);
@@ -229,7 +237,7 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
     }
 
     @Override
-    public Reaction<List<ILsaMolecule>> cloneOnNewNode(final Node<List<ILsaMolecule>> n, final Time currentTime) {
+    protected AbstractReaction<List<ILsaMolecule>> buildNewReaction(final Node<List<ILsaMolecule>> n, final TimeDistribution<List<ILsaMolecule>> distribution, final Time currentTime) {
         throw new UnsupportedOperationException();
     }
 
@@ -239,7 +247,7 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
             /*
              * First run
              */
-            updateInternalStatus(DoubleTime.ZERO_TIME, true, environment);
+            update(DoubleTime.ZERO_TIME, true);
         }
         canRun = false;
         final Map<HashString, ITreeNode<?>> matches = new HashMap<>();
@@ -321,7 +329,7 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
     }
 
     @Override
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<List<ILsaMolecule>, ?> env) {
+    public void update(final Time curTime, final boolean executed) {
         /*
          * It makes sense to reschedule the reaction if:
          * 
@@ -363,6 +371,7 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
             mypos = curPos;
             canRun = true;
         }
+        super.update(curTime, executed);
     }
 
     private class Cleaner implements TIntObjectProcedure<List<? extends ILsaMolecule>> {

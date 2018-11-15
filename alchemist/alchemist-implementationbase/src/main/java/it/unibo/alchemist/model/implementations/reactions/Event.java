@@ -12,7 +12,6 @@
  */
 package it.unibo.alchemist.model.implementations.reactions;
 
-import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
@@ -30,23 +29,15 @@ public final class Event<T> extends AbstractReaction<T> {
 
     /**
      * @param node the node this {@link Event} belongs to
-     * @param timedist the {@link TimeDistribution} this event should use
+     * @param timeDistribution the {@link TimeDistribution} this event should use
      */
-    public Event(final Node<T> node, final TimeDistribution<T> timedist) {
-        super(node, timedist);
+    public Event(final Node<T> node, final TimeDistribution<T> timeDistribution) {
+        super(node, timeDistribution);
     }
 
     @Override
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<T, ?> env) {
+    protected AbstractReaction<T> buildNewReaction(final Node<T> n, final TimeDistribution<T> distribution, final Time currentTime) {
+        return new Event<>(n, distribution);
     }
 
-    @Override
-    public double getRate() {
-        return getTimeDistribution().getRate();
-    }
-
-    @Override
-    public Event<T> cloneOnNewNode(final Node<T> n, final Time currentTime) {
-        return makeClone(() -> new Event<>(n, getTimeDistribution().clone(currentTime)));
-    }
 }

@@ -12,42 +12,60 @@
 package it.unibo.alchemist.model.implementations.timedistributions;
 
 import it.unibo.alchemist.model.implementations.times.DoubleTime;
-import it.unibo.alchemist.model.interfaces.Environment;
+import it.unibo.alchemist.model.interfaces.Condition;
+import it.unibo.alchemist.model.interfaces.Node;
+import it.unibo.alchemist.model.interfaces.Reaction;
 import it.unibo.alchemist.model.interfaces.Time;
+import it.unibo.alchemist.model.interfaces.TimeDistribution;
+
+import java.util.List;
 
 /**
  * @param <T>
  *            Concentration type
  */
-public class Trigger<T> extends AbstractDistribution<T> {
+public final class Trigger<T> implements TimeDistribution<T> {
 
     private static final long serialVersionUID = 5207992119302525618L;
-    private boolean dryRunDone;
+    private Time willOccurAt;
+    private Reaction<T> hostReaction;
 
     /**
      * @param event
      *            the time at which the event will happen
      */
     public Trigger(final Time event) {
-        super(event);
+        willOccurAt = event;
+    }
+
+    @Override
+    public TimeDistribution<T> clone(final Node<T> newNode, final Time currentTime) {
+        return new Trigger<>(willOccurAt);
+    }
+
+    @Override
+    public Time getNextOccurence() {
+        return willOccurAt;
     }
 
     @Override
     public double getRate() {
-        return Double.NaN;
+        return 0;
     }
 
     @Override
-    protected void updateStatus(final Time curTime, final boolean executed, final double param, final Environment<T, ?> env) {
-        if (dryRunDone && curTime.compareTo(getNextOccurence()) >= 0 && executed) {
-            setTau(new DoubleTime(Double.POSITIVE_INFINITY));
+    public void initializationComplete(final Reaction<T> reaction, final Time currentTime) {
+        hostReaction = reaction;
+    }
+
+    @Override
+    public void update(final Time currentTime, final boolean executed, final List<Condition<T>> conditions) {
+        if (executed) {
+            willOccurAt = DoubleTime.INFINITE_TIME;
+            if (hostReaction != null) {
+                hostReaction.getNode().removeReaction(hostReaction);
+            }
         }
-        dryRunDone = true;
-    }
-
-    @Override
-    public Trigger<T> clone(final Time currentTime) {
-        return new Trigger<>(getNextOccurence());
     }
 
 }

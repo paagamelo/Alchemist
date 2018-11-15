@@ -29,6 +29,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import it.unibo.alchemist.model.implementations.reactions.ReactionLike;
+import it.unibo.alchemist.model.implementations.timedistributions.Immediately;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
@@ -191,7 +193,7 @@ public final class ProtelisIncarnation<P extends Position<P>> implements Incarna
             final Node<Object> node, final TimeDistribution<Object> time, final String param) {
         LangUtils.requireNonNull(node, time);
         final boolean isSend = "send".equalsIgnoreCase(param);
-        final Reaction<Object> result = isSend ? new ChemicalReaction<>(node, time) : new Event<>(node, time);
+        final Reaction<Object> result = isSend ? new ReactionLike<>(node, time) : new Event<>(node, time);
         if (param != null) {
             result.setActions(Lists.newArrayList(createAction(rand, env, node, time, result, param)));
         }
@@ -202,13 +204,14 @@ public final class ProtelisIncarnation<P extends Position<P>> implements Incarna
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public TimeDistribution<Object> createTimeDistribution(
             final RandomGenerator rand,
             final Environment<Object, P> env,
             final Node<Object> node,
             final String param) {
         if (param == null) {
-            return new ExponentialTime<>(Double.POSITIVE_INFINITY, rand);
+            return Immediately.INSTANCE;
         }
         double frequency;
         try {

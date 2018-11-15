@@ -8,16 +8,16 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.reactions;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import it.unibo.alchemist.expressions.implementations.NumTreeNode;
 import it.unibo.alchemist.expressions.interfaces.ITreeNode;
-import it.unibo.alchemist.model.interfaces.Dependency;
-import org.apache.commons.math3.random.RandomGenerator;
 import it.unibo.alchemist.model.implementations.actions.LsaStandardAction;
 import it.unibo.alchemist.model.implementations.molecules.LsaMolecule;
 import it.unibo.alchemist.model.implementations.timedistributions.SAPERETimeDistribution;
-import it.unibo.alchemist.model.interfaces.Context;
 import it.unibo.alchemist.model.interfaces.Action;
 import it.unibo.alchemist.model.interfaces.Condition;
+import it.unibo.alchemist.model.interfaces.Context;
+import it.unibo.alchemist.model.interfaces.Dependency;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.ILsaAction;
 import it.unibo.alchemist.model.interfaces.ILsaCondition;
@@ -25,14 +25,12 @@ import it.unibo.alchemist.model.interfaces.ILsaMolecule;
 import it.unibo.alchemist.model.interfaces.ILsaNode;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Position;
-import it.unibo.alchemist.model.interfaces.Reaction;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.danilopianini.lang.HashString;
 import org.danilopianini.util.ArrayListSet;
 import org.danilopianini.util.ListSet;
-
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -117,22 +115,6 @@ public final class SAPEREReaction extends AbstractReaction<List<ILsaMolecule>> {
         environment = env;
     }
 
-    @Override
-    public Reaction<List<ILsaMolecule>> cloneOnNewNode(final Node<List<ILsaMolecule>> n, final Time currentTime) {
-        final SAPEREReaction res = new SAPEREReaction(environment, (ILsaNode) n, rng, timedist.clone(currentTime));
-        final ArrayList<Condition<List<ILsaMolecule>>> c = new ArrayList<>();
-        for (final Condition<List<ILsaMolecule>> cond : getConditions()) {
-            c.add(cond.cloneCondition(n, res));
-        }
-        final ArrayList<Action<List<ILsaMolecule>>> a = new ArrayList<>();
-        for (final Action<List<ILsaMolecule>> act : getActions()) {
-            a.add(act.cloneAction(n, res));
-        }
-        res.setActions(a);
-        res.setConditions(c);
-        return res;
-    }
-
     /**
      * @return the inner {@link Action} list, cast
      */
@@ -145,6 +127,14 @@ public final class SAPEREReaction extends AbstractReaction<List<ILsaMolecule>> {
      */
     protected List<ILsaCondition> getSAPEREConditions() {
         return (List<ILsaCondition>) ((List<? extends Condition<List<ILsaMolecule>>>) getConditions());
+    }
+
+    @Override
+    protected AbstractReaction<List<ILsaMolecule>> buildNewReaction(
+            final Node<List<ILsaMolecule>> n,
+            final TimeDistribution<List<ILsaMolecule>> distribution,
+            final Time currentTime) {
+        return new SAPEREReaction(environment, (ILsaNode) n, rng, distribution);
     }
 
     @Override
@@ -262,7 +252,7 @@ public final class SAPEREReaction extends AbstractReaction<List<ILsaMolecule>> {
     }
 
     @Override
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<List<ILsaMolecule>, ?> env) {
+    public void update(final Time curTime, final boolean executed) {
         if (emptyExecution) {
             emptyExecution = false;
             totalPropensity = 0;
@@ -312,6 +302,7 @@ public final class SAPEREReaction extends AbstractReaction<List<ILsaMolecule>> {
                 }
             }
         }
+        super.update(curTime, executed);
     }
 
     private boolean numericRate() {

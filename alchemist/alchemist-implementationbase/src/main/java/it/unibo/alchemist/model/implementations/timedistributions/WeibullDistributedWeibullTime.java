@@ -8,18 +8,17 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.timedistributions;
 
-import org.apache.commons.math3.distribution.WeibullDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-
 import it.unibo.alchemist.model.implementations.times.DoubleTime;
 import it.unibo.alchemist.model.interfaces.Time;
+import org.apache.commons.math3.distribution.WeibullDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
 
 /**
  * Weibull distributed events, with different (Weibull distributed) mean.
  * 
  * @param <T>
  */
-public class WeibullDistributedWeibullTime<T> extends WeibullTime<T> {
+public final class WeibullDistributedWeibullTime<T> extends WeibullTime<T> {
 
     private static final long serialVersionUID = 1L;
 
@@ -78,4 +77,5 @@ public class WeibullDistributedWeibullTime<T> extends WeibullTime<T> {
         }
         return mean;
     }
+
 }

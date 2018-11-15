@@ -8,22 +8,22 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.timedistributions;
 
-import org.apache.commons.math3.random.RandomGenerator;
-import org.apache.commons.math3.util.FastMath;
-import org.apache.commons.math3.special.Gamma;
-import org.apache.commons.math3.distribution.WeibullDistribution;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import it.unibo.alchemist.model.implementations.times.DoubleTime;
-import it.unibo.alchemist.model.interfaces.Environment;
+import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
+import org.apache.commons.math3.distribution.WeibullDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.special.Gamma;
+import org.apache.commons.math3.util.FastMath;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Weibull distributed events.
  * 
  * @param <T>
  */
-public class WeibullTime<T> extends AbstractDistribution<T> {
+public class WeibullTime<T> extends AbstractMonotonicDistribution<T> {
 
     private static final long serialVersionUID = 5216987069271114818L;
     @SuppressFBWarnings(value = "SE_BAD_FIELD", justification = "All the random engines provided by Apache are Serializable")
@@ -82,24 +82,11 @@ public class WeibullTime<T> extends AbstractDistribution<T> {
         this.offset = offset;
     }
 
-    @Override
-    public void updateStatus(final Time curTime, final boolean executed, final double param, final Environment<T, ?> env) {
-        if (executed) {
-            setTau(curTime.plus(new DoubleTime(genSample())));
-        }
-    }
-
     /**
      * @return a sample from the distribution
      */
     protected double genSample() {
         return dist.inverseCumulativeProbability(rand.nextDouble()) + offset;
-    }
-
-    @Override
-    @SuppressFBWarnings("CN_IDIOM_NO_SUPER_CALL")
-    public WeibullTime<T> clone() {
-        return new WeibullTime<>(dist.getShape(), dist.getScale(), offset, getNextOccurence(), rand);
     }
 
     /**
@@ -117,17 +104,17 @@ public class WeibullTime<T> extends AbstractDistribution<T> {
     }
 
     @Override
-    public double getRate() {
+    public final double getRate() {
         return getMean();
     }
 
     /**
-     * Generates a {@link WeibullDistribution} given its mean and stdev.
+     * Generates a {@link WeibullDistribution} given its mean and standard deviation.
      * 
      * @param mean
      *            the mean
      * @param deviation
-     *            the stdev
+     *            the standard deviation
      * @param random
      *            the random generator
      * @return a new {@link WeibullDistribution}
@@ -154,7 +141,13 @@ public class WeibullTime<T> extends AbstractDistribution<T> {
     }
 
     @Override
-    public WeibullTime<T> clone(final Time currentTime) {
-        return new WeibullTime<>(rand, dist, offset, currentTime);
+    protected final WeibullTime<T> cloneWithStartTime(final Node<T> node, final Time startTime) {
+        return new WeibullTime<>(dist.getShape(), dist.getScale(), offset, startTime, rand);
+    }
+
+    @NotNull
+    @Override
+    public final Time computeDeltaTime() {
+        return new DoubleTime(genSample());
     }
 }

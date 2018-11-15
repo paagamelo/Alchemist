@@ -12,9 +12,9 @@
  */
 package it.unibo.alchemist.model.implementations.reactions;
 
-import it.unibo.alchemist.model.interfaces.Context;
 import it.unibo.alchemist.model.interfaces.Action;
 import it.unibo.alchemist.model.interfaces.Condition;
+import it.unibo.alchemist.model.interfaces.Context;
 import it.unibo.alchemist.model.interfaces.Dependency;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Molecule;
@@ -22,6 +22,12 @@ import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Reaction;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
+import org.danilopianini.util.ArrayListSet;
+import org.danilopianini.util.Hashes;
+import org.danilopianini.util.ImmutableListSet;
+import org.danilopianini.util.LinkedListSet;
+import org.danilopianini.util.ListSet;
+import org.danilopianini.util.ListSets;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,13 +36,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-
-import org.danilopianini.util.ArrayListSet;
-import org.danilopianini.util.Hashes;
-import org.danilopianini.util.ImmutableListSet;
-import org.danilopianini.util.LinkedListSet;
-import org.danilopianini.util.ListSet;
-import org.danilopianini.util.ListSets;
 
 /**
  * The type which describes the concentration of a molecule
@@ -75,8 +74,8 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
      */
     public AbstractReaction(final Node<T> n, final TimeDistribution<T> pd) {
         hash = Hashes.hash32(n.hashCode(), n.getChemicalSpecies(), n.getReactions().size());
-        dist = pd;
-        node = n;
+        dist = Objects.requireNonNull(pd);
+        node = Objects.requireNonNull(n);
     }
 
     /**
@@ -115,6 +114,32 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
         }
         return i == conditions.size();
     }
+
+    /**
+     * Subclasses must should override this method, preferably by calling makeClone and passing an appropriate
+     * constructor.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public final AbstractReaction<T> cloneOnNewNode(final Node<T> n, final Time currentTime) {
+        return makeClone(() -> buildNewReaction(n, dist.clone(n, currentTime), currentTime));
+    }
+
+    /**
+     * This method returns a new instance of an existing reaction. It is called internally when a cloning is needed, as
+     * part of a process which also clones the time distribution as well as conditions and actions, and assembles a new
+     * reaction to be inserted in another node.
+     *
+     * This method should only build the reaction - namely, it is normally sufficient to return a call to an appropriate
+     * constructor of the subclass.
+     *
+     * @param n the new node
+     * @param distribution the time distribution
+     * @param currentTime the simulation time at which the clone has been requested
+     * @return a new reaction
+     */
+    protected abstract AbstractReaction<T> buildNewReaction(Node<T> n, TimeDistribution<T> distribution, Time currentTime);
 
     @Override
     public final int compareTo(final Reaction<T> o) {
@@ -178,11 +203,16 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
         return outcontext;
     }
 
+    @Override
+    public double getRate() {
+        return dist.getRate();
+    }
+
     /**
      * @return a {@link String} representation of the rate
      */
     protected String getRateAsString() {
-        return Double.toString(dist.getRate());
+        return Double.toString(getRate());
     }
 
     /**
@@ -195,7 +225,8 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     }
 
     @Override
-    public final Time getTau() {
+    public Time getTau() {
+        // TODO: rename this method
         return dist.getNextOccurence();
     }
 
@@ -208,9 +239,6 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     public final int hashCode() {
         return hash;
     }
-
-    @Override
-    public void initializationComplete(final Time t, final Environment<T, ?> env) { }
 
     /**
      * This method provides facility to clone reactions. Given a constructor in
@@ -327,25 +355,9 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     }
 
     @Override
-    public final void update(final Time curTime, final boolean executed, final Environment<T, ?> env) {
-        updateInternalStatus(curTime, executed, env);
-        dist.update(curTime, executed, getRate(), env);
+    public void update(final Time curTime, final boolean executed) {
+        dist.update(curTime, executed, getConditions());
     }
-
-    /**
-     * This method gets called as soon as
-     * {@link #update(Time, boolean, Environment)} is called. It is useful to
-     * update the internal status of the reaction.
-     * 
-     * @param curTime
-     *            the current simulation time
-     * @param executed
-     *            true if this reaction has just been executed, false if the
-     *            update has been triggered due to a dependency
-     * @param env
-     *            the current environment
-     */
-    protected abstract void updateInternalStatus(Time curTime, boolean executed, Environment<T, ?> env);
 
     @Override
     public final Node<T> getNode() {

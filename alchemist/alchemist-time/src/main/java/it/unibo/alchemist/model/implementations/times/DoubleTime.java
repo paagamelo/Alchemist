@@ -39,7 +39,7 @@ public final class DoubleTime implements Time {
      * Default empty constructor, builds a DoubleTime with value 0.
      */
     public DoubleTime() {
-        t = 0;
+        this(0);
     }
 
     /**
@@ -49,6 +49,9 @@ public final class DoubleTime implements Time {
      *            the starting value of the time.
      */
     public DoubleTime(final double val) {
+        if (Double.isNaN(val)) {
+            throw new IllegalArgumentException("NaN is not a valid time.");
+        }
         t = val;
     }
 

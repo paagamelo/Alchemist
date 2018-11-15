@@ -8,14 +8,17 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.timedistributions;
 
-import org.apache.commons.math3.distribution.RealDistribution;
-import org.apache.commons.math3.random.RandomGenerator;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import it.unibo.alchemist.model.implementations.times.DoubleTime;
 import it.unibo.alchemist.model.implementations.utils.RealDistributionUtil;
-import it.unibo.alchemist.model.interfaces.Environment;
+import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
+import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.math3.distribution.RealDistribution;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.jetbrains.annotations.NotNull;
+
+import java.io.Serializable;
 
 /**
  * This class is able to use any distribution provided by Apache Math 3 as a
@@ -27,7 +30,7 @@ import it.unibo.alchemist.model.interfaces.Time;
  * @param <T>
  *            concentration type
  */
-public class AnyRealDistribution<T> extends AbstractDistribution<T> {
+public final class AnyRealDistribution<T> extends AbstractMonotonicDistribution<T> {
 
     /**
      * 
@@ -81,29 +84,28 @@ public class AnyRealDistribution<T> extends AbstractDistribution<T> {
      *            simulation {@link RandomGenerator}.
      */
     public AnyRealDistribution(final Time start, final RealDistribution distribution) {
-        super(start);
+        super(start.plus(new DoubleTime(distribution.sample())));
         this.distribution = distribution;
     }
 
     @Override
-    public final double getRate() {
+    public double getRate() {
         return distribution.getNumericalMean();
     }
 
     @Override
-    protected final void updateStatus(final Time curTime, final boolean executed, final double param, final Environment<T, ?> env) {
-        if (param != getRate()) {
-            throw new IllegalStateException(getClass().getSimpleName() + " does not allow to dynamically tune the rate.");
+    protected AbstractDistribution<T> cloneWithStartTime(final Node<T> node, final Time currentTime) {
+        if (distribution instanceof Serializable) {
+            return new AnyRealDistribution<>(currentTime, (RealDistribution) SerializationUtils.clone((Serializable) distribution));
         }
-        setTau(new DoubleTime(curTime.toDouble() + distribution.sample()));
+        throw new UnsupportedOperationException("Could not clone this time distribution, as "
+                + distribution.getClass().getSimpleName() + " cannot be cloned (it's not Serializable)");
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @NotNull
     @Override
-    public AbstractDistribution<T> clone(final Time currentTime) {
-        return new AnyRealDistribution<>(currentTime, distribution);
+    public Time computeDeltaTime() {
+        return new DoubleTime(distribution.sample());
     }
 
 }

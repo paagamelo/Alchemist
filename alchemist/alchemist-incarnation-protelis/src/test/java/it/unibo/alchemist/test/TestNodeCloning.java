@@ -92,11 +92,11 @@ public class TestNodeCloning<P extends Position<P>> {
                         nid.apply(1), dist.apply(2, 1),
                         nid.apply(0), dist.apply(2, 1) + dist.apply(1, 0),
                         nid.apply(3), dist.apply(2, 1) + dist.apply(1, 0) + dist.apply(0, 3));
-//                System.out.println("step: " + step + ", time: " + time + " --- " + expectations);
-//                System.out.println("Just executed: " + r.getClass().getSimpleName() + "@" + r.getNode());
-//                for (Node<Object> n: env) {
-//                    System.out.println(n + ": " + n.getConcentration(DATAMOL));
-//                }
+                System.out.println("step: " + step + ", time: " + time + " --- " + expectations);
+                System.out.println("Just executed: " + r.getClass().getSimpleName() + "@" + r.getNode());
+                for (Node<Object> n: env) {
+                    System.out.println(n + ": " + n.getConcentration(DATAMOL));
+                }
                 if (step == ENABLE_STEP) {
                     sim.schedule(() -> env.getNodeByID(3).setConcentration(ENABLEDMOL, true));
                 }

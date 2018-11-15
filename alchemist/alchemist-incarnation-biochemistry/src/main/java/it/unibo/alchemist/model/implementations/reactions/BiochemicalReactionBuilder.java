@@ -24,6 +24,7 @@ import java.util.Map;
 
 import javax.annotation.Nonnull;
 
+import it.unibo.alchemist.model.implementations.timedistributions.ExponentialTime;
 import org.antlr.v4.runtime.ANTLRErrorListener;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -102,7 +103,7 @@ public class BiochemicalReactionBuilder<P extends Position<P>> {
 
     /**
      * Builds the chemical reaction.
-     * @return a builded chemical reaction based on the given program
+     * @return a built chemical reaction based on the given program
      */
     public Reaction<Double> build()  {
         checkReaction();

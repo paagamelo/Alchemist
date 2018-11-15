@@ -9,19 +9,21 @@
 package it.unibo.alchemist.model.implementations.timedistributions;
 
 import it.unibo.alchemist.model.implementations.times.DoubleTime;
-import it.unibo.alchemist.model.interfaces.Environment;
+import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A DiracComb is a sequence of events that happen every fixed time interval.
  * 
  * @param <T>
  */
-public class DiracComb<T> extends AbstractDistribution<T> {
+public class DiracComb<T> extends AbstractMonotonicDistribution<T> {
 
     private static final long serialVersionUID = -5382454244629122722L;
 
     private final double timeInterval;
+    private final Time timeIntervalAsTime;
 
     /**
      * @param start
@@ -30,8 +32,10 @@ public class DiracComb<T> extends AbstractDistribution<T> {
      *            how many events should happen per time unit
      */
     public DiracComb(final Time start, final double rate) {
-        super(start);
+        // Tricks the superclass into starting exactly at start time, as it updates once before actual execution
+        super(start.minus(new DoubleTime(1 / rate)));
         timeInterval = 1 / rate;
+        timeIntervalAsTime = new DoubleTime(timeInterval);
     }
 
     /**
@@ -47,20 +51,18 @@ public class DiracComb<T> extends AbstractDistribution<T> {
         return 1 / timeInterval;
     }
 
+    @NotNull
     @Override
-    protected final void updateStatus(
-            final Time curTime,
-            final boolean executed,
-            final double param,
-            final Environment<T, ?> env) {
-        if (executed) {
-            setTau(new DoubleTime(curTime.toDouble() + timeInterval));
-        }
+    public final Time computeDeltaTime() {
+        return timeIntervalAsTime;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public final DiracComb<T> clone(final Time currentTime) {
-        return new DiracComb<>(currentTime, 1 / timeInterval);
+    public AbstractDistribution<T> cloneWithStartTime(final Node<T> node, final Time start) {
+        return new DiracComb<>(start, 1 / timeInterval);
     }
 
     /**
@@ -68,7 +70,7 @@ public class DiracComb<T> extends AbstractDistribution<T> {
      */
     @Override
     public String toString() {
-        return getClass().getSimpleName() + " every " + timeInterval;
+        return getClass().getSimpleName() + "(" + timeInterval + ")";
     }
 
 }
