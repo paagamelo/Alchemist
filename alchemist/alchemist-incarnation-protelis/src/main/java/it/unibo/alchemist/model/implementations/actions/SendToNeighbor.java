@@ -64,7 +64,7 @@ public final class SendToNeighbor extends AbstractAction<Object> {
     public void execute() {
         final AlchemistNetworkManager mgr = getNode().getNetworkManager(prog);
         Objects.requireNonNull(mgr);
-        mgr.simulateMessageArrival(reaction.getTau().toDouble());
+        mgr.simulateMessageArrival(reaction.getPutativeExecutionTime().toDouble());
         prog.prepareForComputationalCycle();
     }
 

@@ -45,7 +45,7 @@ public final class ArrayIndexedPriorityQueue<T> implements Scheduler<T> {
     @Override
     public void addReaction(final Reaction<T> r) {
         tree.add(r);
-        times.add(r.getTau());
+        times.add(r.getPutativeExecutionTime());
         final int index = tree.size() - 1;
         indexes.put(r, index);
         updateEffectively(r, index);
@@ -53,7 +53,7 @@ public final class ArrayIndexedPriorityQueue<T> implements Scheduler<T> {
 
     private void down(final Reaction<T> r, final int i) {
         int index = i;
-        final Time newTime = r.getTau();
+        final Time newTime = r.getPutativeExecutionTime();
         do {
             int minIndex = 2 * index + 1;
             if (minIndex > tree.size() - 1) {
@@ -100,7 +100,7 @@ public final class ArrayIndexedPriorityQueue<T> implements Scheduler<T> {
             final Reaction<T> swapped = tree.get(last);
             indexes.put(swapped, index);
             tree.set(index, swapped);
-            times.set(index, swapped.getTau());
+            times.set(index, swapped.getPutativeExecutionTime());
             tree.remove(last);
             times.remove(last);
             indexes.remove(r);
@@ -141,7 +141,7 @@ public final class ArrayIndexedPriorityQueue<T> implements Scheduler<T> {
     private boolean up(final Reaction<T> r, final int i) {
         int index = i;
         int parentIndex = getParent(index);
-        final Time newTime = r.getTau();
+        final Time newTime = r.getPutativeExecutionTime();
         if (parentIndex == -1) {
             return false;
         } else {
@@ -173,7 +173,7 @@ public final class ArrayIndexedPriorityQueue<T> implements Scheduler<T> {
     public void updateReaction(final Reaction<T> r) {
         final int index = indexes.get(r);
         if (index != indexes.getNoEntryValue()) {
-            times.set(index, r.getTau());
+            times.set(index, r.getPutativeExecutionTime());
             updateEffectively(r, index);
         }
     }

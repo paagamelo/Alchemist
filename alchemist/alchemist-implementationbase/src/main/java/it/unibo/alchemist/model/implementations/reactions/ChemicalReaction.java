@@ -8,30 +8,40 @@
  ******************************************************************************/
 package it.unibo.alchemist.model.implementations.reactions;
 
+import it.unibo.alchemist.model.implementations.timedistributions.ExponentialTime;
 import it.unibo.alchemist.model.interfaces.Condition;
 import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
+import org.apache.commons.math3.util.MathArrays;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.List;
 
 /**
  * 
  * 
  * @param <T>
  */
-public class ChemicalReaction<T> extends AbstractReaction<T> {
+public final class ChemicalReaction<T> extends ReactionLike<T> {
 
     private static final long serialVersionUID = -5260452049415003046L;
-    private double currentRate;
+    private final double baseRate;
+    private double currentRate = Double.NaN;
 
     /**
      * @param n
      *            node
-     * @param pd
-     *            time distribution
      */
-    public ChemicalReaction(final Node<T> n, final TimeDistribution<T> pd) {
-        super(n, pd);
+    public ChemicalReaction(final Node<T> n, double rate) {
+        super(n);
+        baseRate = rate;
+    }
+
+    public ChemicalReaction(final Node<T> node, TimeDistribution timeDistribution) {
+        super(node, timeDistribution);
+        this(node, timeDistribution.getRate());
     }
 
     /**
@@ -39,20 +49,19 @@ public class ChemicalReaction<T> extends AbstractReaction<T> {
      */
     @Override
     public ChemicalReaction<T> cloneOnNewNode(final Node<T> n, final Time currentTime) {
-        return makeClone(() -> new ChemicalReaction<>(n, getTimeDistribution().clone(currentTime)));
+        return makeClone(() -> new ChemicalReaction<>(n, baseRate));
     }
 
     @Override
-    public final void initializationComplete(final Time t, final Environment<T, ?> env) {
-        update(t, true, env);
+    public void initializationComplete(final Time t) {
+
     }
 
     /**
      * Subclasses must call super.updateInternalStatus for the rate to get updated in case of method override.
      */
-    @Override
     protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<T, ?> env) {
-        currentRate = getTimeDistribution().getRate();
+        currentRate = baseRate;
         for (final Condition<T> cond : getConditions()) {
             final double v = cond.getPropensityContribution();
             if (v == 0) {
@@ -68,7 +77,32 @@ public class ChemicalReaction<T> extends AbstractReaction<T> {
 
     @Override
     public final double getRate() {
-        return currentRate;
+        return Double.isNaN(currentRate) ? getTimeDistribution().getRate() : currentRate;
     }
 
+    @Override
+    public Time getPutativeExecutionTime() {
+        return null;
+    }
+
+    @Override
+    public TimeDistribution getTimeDistribution() {
+        return null;
+    }
+
+    @Override
+    public void update(final Time curTime, final boolean executed) {
+
+    }
+
+    @Override
+    protected Time generateTime(@NotNull final double[] propensityVector,
+                                @NotNull final Time currentTime,
+                                final boolean executed) {
+        currentRate = getTimeDistribution().getRate();
+        for (final double v : propensityVector) {
+            currentRate *= v;
+        }
+        return getTimeDistribution();
+    }
 }

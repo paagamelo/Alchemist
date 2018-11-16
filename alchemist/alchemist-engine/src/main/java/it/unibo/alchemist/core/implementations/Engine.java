@@ -156,7 +156,7 @@ public final class Engine<T, P extends Position<? extends P>> implements Simulat
             this.newStatus(Status.TERMINATED);
             L.info("No more reactions.");
         } else {
-            final Time t = mu.getTau();
+            final Time t = mu.getPutativeExecutionTime();
             if (t.compareTo(currentTime) < 0) {
                 throw new IllegalStateException(mu + "\nis scheduled in the past at time " + t
                         + ", current time is " + currentTime
@@ -446,9 +446,9 @@ public final class Engine<T, P extends Position<? extends P>> implements Simulat
     }
 
     private void updateReaction(final Reaction<T> r) {
-        final Time t = r.getTau();
+        final Time t = r.getPutativeExecutionTime();
         r.update(currentTime, false, env);
-        if (!r.getTau().equals(t)) {
+        if (!r.getPutativeExecutionTime().equals(t)) {
             ipq.updateReaction(r);
         }
     }

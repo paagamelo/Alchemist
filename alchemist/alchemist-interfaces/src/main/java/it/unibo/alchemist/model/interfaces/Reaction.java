@@ -55,10 +55,8 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
      * @param t
      *            the time at which the initialization of this reaction was
      *            accomplished
-     * @param env
-     *            the environment
      */
-    void initializationComplete(Time t, Environment<T, ?> env);
+    void initializationComplete(Time t);
 
     /**
      * @return The list of {@link Action}s of the {@link Reaction}. There is no
@@ -121,7 +119,7 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
      * @return The global {@link Time} at which this reaction is scheduled to be
      *         executed
      */
-    Time getTau();
+    Time getPutativeExecutionTime();
 
     /**
      * @return the {@link TimeDistribution} for this {@link Reaction}
@@ -155,9 +153,7 @@ public interface Reaction<T> extends Comparable<Reaction<T>>, Serializable {
      *            the current {@link Time} of execution. This is mandatory in
      *            order to correctly compute the time shift of an
      *            already-scheduled reaction
-     * @param env
-     *            the current environment
      */
-    void update(Time curTime, boolean executed, Environment<T, ?> env);
+    void update(Time curTime, boolean executed);
 
 }

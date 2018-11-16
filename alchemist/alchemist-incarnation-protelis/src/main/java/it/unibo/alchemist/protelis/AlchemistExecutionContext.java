@@ -154,7 +154,7 @@ public final class AlchemistExecutionContext<P extends Position<P>> extends Abst
 
     @Override
     public Number getCurrentTime() {
-        return react.getTau().toDouble();
+        return react.getPutativeExecutionTime().toDouble();
     }
 
     /**

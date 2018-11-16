@@ -16,26 +16,12 @@ import java.io.Serializable;
  * @param <T>
  *            concentration type
  */
-public interface TimeDistribution<T> extends Cloneable, Serializable {
+public interface TimeDistribution extends Serializable {
 
     /**
-     * Updates the internal status.
-     * 
-     * @param currentTime
-     *            current time
-     * @param executed
-     *            true if the reaction has just been executed
-     * @param param
-     *            a parameter passed by the reaction
-     * @param environment
-     *            the current environment
+     * @return a sample from the time distribution
      */
-    void update(Time currentTime, boolean executed, double param, Environment<T, ?> environment);
-
-    /**
-     * @return the next time at which the event will occur
-     */
-    Time getNextOccurence();
+    Time computeNextOccurrence(Time currentTime);
 
     /**
      * @return how many times per time unit the event will happen on average
@@ -47,6 +33,6 @@ public interface TimeDistribution<T> extends Cloneable, Serializable {
      *            the time at which the cloning operation happened
      * @return an exact copy of this {@link TimeDistribution}
      */
-    TimeDistribution<T> clone(Time currentTime);
+    TimeDistribution clone(Time currentTime);
 
 }

@@ -64,7 +64,7 @@ sealed class RunScafiProgram[P <: Position[P]] (
     }
 
     val position: P = environment.getPosition(node)
-    val currentTime = reaction.getTau
+    val currentTime = reaction.getPutativeExecutionTime
     if(!nbrData.contains(node.getId)) nbrData += node.getId -> new NBRData(factory.emptyExport(), environment.getPosition(node), Double.NaN)
     nbrData = nbrData.filter { case (id,data) => id==node.getId || data.executionTime >= currentTime - retentionTime }
     val deltaTime = currentTime.minus(nbrData.get(node.getId).map( _.executionTime).getOrElse(Double.NaN))

@@ -125,7 +125,7 @@ public final class AlchemistNetworkManager implements NetworkManager, Serializab
             msgs = new LinkedHashMap<>();
             return res;
         }
-        final double currentTime = event.getTau().toDouble();
+        final double currentTime = event.getPutativeExecutionTime().toDouble();
         return convertMessages(m -> currentTime - m.time < retentionTime);
     }
 

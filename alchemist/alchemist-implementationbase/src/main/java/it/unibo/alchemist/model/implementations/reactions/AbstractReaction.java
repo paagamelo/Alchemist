@@ -62,7 +62,6 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     private ListSet<Dependency> outbound = new LinkedListSet<>();
     private ListSet<Dependency> inbound = new LinkedListSet<>();
     private int stringLength = Byte.MAX_VALUE;
-    private final TimeDistribution<T> dist;
     private final Node<T> node;
 
     /**
@@ -70,12 +69,9 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
      * 
      * @param n
      *            the node this reaction belongs to
-     * @param pd
-     *            the time distribution this reaction should follow
      */
-    public AbstractReaction(final Node<T> n, final TimeDistribution<T> pd) {
+    public AbstractReaction(final Node<T> n) {
         hash = Hashes.hash32(n.hashCode(), n.getChemicalSpecies(), n.getReactions().size());
-        dist = pd;
         node = n;
     }
 
@@ -118,7 +114,7 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
 
     @Override
     public final int compareTo(final Reaction<T> o) {
-        return getTau().compareTo(o.getTau());
+        return getPutativeExecutionTime().compareTo(o.getPutativeExecutionTime());
     }
 
     @Override
@@ -182,7 +178,7 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
      * @return a {@link String} representation of the rate
      */
     protected String getRateAsString() {
-        return Double.toString(dist.getRate());
+        return Double.toString(getRate());
     }
 
     /**
@@ -195,22 +191,9 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
     }
 
     @Override
-    public final Time getTau() {
-        return dist.getNextOccurence();
-    }
-
-    @Override
-    public final TimeDistribution<T> getTimeDistribution() {
-        return dist;
-    }
-
-    @Override
     public final int hashCode() {
         return hash;
     }
-
-    @Override
-    public void initializationComplete(final Time t, final Environment<T, ?> env) { }
 
     /**
      * This method provides facility to clone reactions. Given a constructor in
@@ -315,7 +298,7 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
         final StringBuilder tot = new StringBuilder(stringLength + MARGIN);
         tot.append(getReactionName());
         tot.append('@');
-        tot.append(getTau());
+        tot.append(getPutativeExecutionTime());
         tot.append(':');
         tot.append(getConditions().toString());
         tot.append('-');
@@ -325,27 +308,6 @@ public abstract class AbstractReaction<T> implements Reaction<T> {
         stringLength = tot.length();
         return tot.toString();
     }
-
-    @Override
-    public final void update(final Time curTime, final boolean executed, final Environment<T, ?> env) {
-        updateInternalStatus(curTime, executed, env);
-        dist.update(curTime, executed, getRate(), env);
-    }
-
-    /**
-     * This method gets called as soon as
-     * {@link #update(Time, boolean, Environment)} is called. It is useful to
-     * update the internal status of the reaction.
-     * 
-     * @param curTime
-     *            the current simulation time
-     * @param executed
-     *            true if this reaction has just been executed, false if the
-     *            update has been triggered due to a dependency
-     * @param env
-     *            the current environment
-     */
-    protected abstract void updateInternalStatus(Time curTime, boolean executed, Environment<T, ?> env);
 
     @Override
     public final Node<T> getNode() {

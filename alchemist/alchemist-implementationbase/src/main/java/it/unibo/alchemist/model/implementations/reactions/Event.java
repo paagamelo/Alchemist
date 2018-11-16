@@ -12,7 +12,6 @@
  */
 package it.unibo.alchemist.model.implementations.reactions;
 
-import it.unibo.alchemist.model.interfaces.Environment;
 import it.unibo.alchemist.model.interfaces.Node;
 import it.unibo.alchemist.model.interfaces.Time;
 import it.unibo.alchemist.model.interfaces.TimeDistribution;
@@ -24,20 +23,17 @@ import it.unibo.alchemist.model.interfaces.TimeDistribution;
  * 
  * @param <T>
  */
-public final class Event<T> extends AbstractReaction<T> {
+public final class Event<T> extends AbstractReactionWIthTimeDistribution<T> {
 
     private static final long serialVersionUID = -1640973841645383193L;
+    private Time nextTime;
 
     /**
      * @param node the node this {@link Event} belongs to
      * @param timedist the {@link TimeDistribution} this event should use
      */
-    public Event(final Node<T> node, final TimeDistribution<T> timedist) {
+    public Event(final Node<T> node, final TimeDistribution timedist) {
         super(node, timedist);
-    }
-
-    @Override
-    protected void updateInternalStatus(final Time curTime, final boolean executed, final Environment<T, ?> env) {
     }
 
     @Override
@@ -46,7 +42,30 @@ public final class Event<T> extends AbstractReaction<T> {
     }
 
     @Override
+    public Time getPutativeExecutionTime() {
+        if (nextTime == null) {
+            throw new IllegalStateException("Putative times can't be computed until the initialization is completed.");
+        }
+        return nextTime;
+    }
+
+    @Override
+    public void update(final Time curTime, final boolean executed) {
+        if (executed) {
+            nextTime = getTimeDistribution().computeNextOccurrence(curTime);
+        }
+        if (nextTime.isInfinite()) {
+            getNode().removeReaction(this);
+        }
+    }
+
+    @Override
     public Event<T> cloneOnNewNode(final Node<T> n, final Time currentTime) {
         return makeClone(() -> new Event<>(n, getTimeDistribution().clone(currentTime)));
+    }
+
+    @Override
+    public void initializationComplete(final Time t) {
+        nextTime = getTimeDistribution().computeNextOccurrence(t);
     }
 }

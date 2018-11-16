@@ -91,7 +91,7 @@ public class TestTargetWalker {
     private void run() {
         IntStream.range(0, STEPS).forEach(i -> {
             reaction.execute();
-            reaction.update(reaction.getTau(), true, env);
+            reaction.update(reaction.getPutativeExecutionTime(), true, env);
         });
     }
 

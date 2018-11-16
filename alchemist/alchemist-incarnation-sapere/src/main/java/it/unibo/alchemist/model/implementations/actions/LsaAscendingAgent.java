@@ -112,11 +112,11 @@ public final class LsaAscendingAgent<P extends Position2D<? extends P>> extends 
 
         double[] walkedTime = new double[2];
         if (firstRun) {
-            startTimeSIMU = r.getTau().toDouble();
+            startTimeSIMU = r.getPutativeExecutionTime().toDouble();
             startTimeREAL = System.currentTimeMillis();
             firstRun = false;
         }
-        walkedTime[0] = r.getTau().toDouble() - startTimeSIMU;
+        walkedTime[0] = r.getPutativeExecutionTime().toDouble() - startTimeSIMU;
         walkedTime[1] = System.currentTimeMillis() - startTimeREAL;
         return walkedTime;
     }

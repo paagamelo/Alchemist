@@ -243,7 +243,7 @@ public final class SAPEREGradient<P extends Position<P>> extends AbstractReactio
         }
         canRun = false;
         final Map<HashString, ITreeNode<?>> matches = new HashMap<>();
-        matches.put(LsaMolecule.SYN_T, new NumTreeNode(getTau().toDouble()));
+        matches.put(LsaMolecule.SYN_T, new NumTreeNode(getPutativeExecutionTime().toDouble()));
         final List<ILsaMolecule> createdFromSource = cleanUpExistingAndRecomputeFromSource(matches); //NOPMD: there is a side effect
         /*
          * Context computation: if there are contexts matched, use the first.
